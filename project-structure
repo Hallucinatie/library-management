@@ -1,0 +1,25 @@
+.
+├── src/
+│   ├── config/
+│   │   ├── database.js
+│   │   └── logger.js
+│   ├── controllers/
+│   │   ├── adminController.js
+│   │   ├── userController.js
+│   │   └── guestController.js
+│   ├── middleware/
+│   │   ├── auth.js
+│   │   ├── errorHandler.js
+│   │   └── validator.js
+│   ├── models/
+│   │   ├── book.js
+│   │   ├── paper.js
+│   │   ├── user.js
+│   │   └── borrowLog.js
+│   ├── routes/
+│   │   ├── admin.js
+│   │   ├── user.js
+│   │   └── guest.js
+│   └── app.js
+├── .env
+└── package.json 
