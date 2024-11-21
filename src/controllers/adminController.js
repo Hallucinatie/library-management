@@ -4,6 +4,7 @@ const User = require('../models/user');
 const BorrowLog = require('../models/borrowLog');
 const logger = require('../config/logger');
 const pool = require('../config/database').pool;
+const bcrypt = require('bcrypt');
 
 class AdminController {
     // 书籍管理
@@ -195,6 +196,62 @@ class AdminController {
                 resources: {
                     totalBooks: parseInt(resourceStats.rows[0].totalbooks),
                     totalPapers: parseInt(resourceStats.rows[0].totalpapers)
+                }
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async registerAdmin(req, res, next) {
+        try {
+            const { username, password, email } = req.body;
+
+            // 检查用户名是否已存在
+            const existingUser = await User.findByUsername(username);
+            if (existingUser) {
+                return res.status(400).json({
+                    code: 400,
+                    msg: '用户名已存在',
+                    data: null
+                });
+            }
+
+            // 检查邮箱是否已存在
+            const existingEmail = await User.findByEmail(email);
+            if (existingEmail) {
+                return res.status(400).json({
+                    code: 400,
+                    msg: '邮箱已被使用',
+                    data: null
+                });
+            }
+
+            // 加密密码
+            const saltRounds = 10;
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+            // 创建新管理员用户
+            const newAdmin = await User.create({
+                username,
+                password: hashedPassword,
+                email,
+                role: 'admin',
+                status: 'active'
+            });
+
+            logger.info(`管理员 ${req.user.username} 创建了新管理员账号: ${username}`);
+
+            // 返回创建的管理员信息（不包含密码）
+            res.status(201).json({
+                code: 201,
+                msg: '管理员账号创建成功',
+                data: {
+                    id: newAdmin.id,
+                    username: newAdmin.username,
+                    email: newAdmin.email,
+                    role: newAdmin.role,
+                    status: newAdmin.status
                 }
             });
         } catch (error) {

@@ -63,6 +63,13 @@ class User {
         const { rows } = await pool.query(query, [username]);
         return rows[0];
     }
+
+    // 根据邮箱查找用户
+    static async findByEmail(email) {
+        const query = 'SELECT * FROM users WHERE email = $1';
+        const { rows } = await pool.query(query, [email]);
+        return rows[0];
+    }
 }
 
 module.exports = User; 

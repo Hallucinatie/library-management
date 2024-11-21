@@ -7,11 +7,15 @@ const {
     bookValidationRules,
     paperValidationRules,
     userValidationRules,
-    idParamValidation
+    idParamValidation,
+    adminRegisterValidation
 } = require('../middleware/validator');
 
 // 所有管理员路由都需要管理员权限
 router.use(adminAuth);
+
+// 管理员注册路由
+router.post('/register', adminRegisterValidation, validate, AdminController.registerAdmin);
 
 // 书籍管理路由
 router.post('/books', bookValidationRules(), validate, AdminController.addBook);

@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const User = require('../models/user');
 const logger = require('../config/logger');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 class AuthController {
     // 管理员登录
@@ -128,6 +128,63 @@ class AuthController {
                     role: user.role
                 },
                 token
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    // 用户注册
+    static async register(req, res, next) {
+        try {
+            const { username, password, email } = req.body;
+
+            // 检查用户名是否已存在
+            const existingUser = await User.findByUsername(username);
+            if (existingUser) {
+                return res.status(400).json({
+                    code: 400,
+                    msg: '用户名已存在',
+                    data: null
+                });
+            }
+
+            // 检查邮箱是否已存在
+            const existingEmail = await User.findByEmail(email);
+            if (existingEmail) {
+                return res.status(400).json({
+                    code: 400,
+                    msg: '邮箱已被使用',
+                    data: null
+                });
+            }
+
+            // 加密密码
+            const saltRounds = 10;
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+            // 创建新用户
+            const newUser = await User.create({
+                username,
+                password: hashedPassword,
+                email,
+                role: 'user',
+                status: 'active'
+            });
+
+            logger.info(`新用户注册: ${username}`);
+
+            // 返回创建的用户信息（不包含密码）
+            res.status(201).json({
+                code: 201,
+                msg: '注册成功',
+                data: {
+                    id: newUser.id,
+                    username: newUser.username,
+                    email: newUser.email,
+                    role: newUser.role,
+                    status: newUser.status
+                }
             });
         } catch (error) {
             next(error);
