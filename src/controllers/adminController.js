@@ -56,45 +56,173 @@ class AdminController {
     // 论文管理
     static async addPaper(req, res, next) {
         try {
-            const paper = await Paper.create(req.body);
+            const paperData = {
+                ...req.body,
+                userId: req.user.id  // 这里自动绑定当前登录用户的ID
+            };
+
+            const paper = await Paper.create(paperData);
             logger.info(`新论文已添加: ${paper.title}`);
-            res.status(201).json(paper);
+            res.status(201).json({
+                code: 201,
+                msg: '论文添加成功',
+                data: paper
+            });
         } catch (error) {
+            logger.error(`添加论文失败: ${error.message}`);
             next(error);
         }
     }
 
     static async updatePaper(req, res, next) {
         try {
-            const paper = await Paper.update(req.params.id, req.body);
-            if (!paper) {
-                return res.status(404).json({ message: '未找到该论文' });
+            // 首先检查论文是否存在
+            const existingPaper = await Paper.findById(req.params.id);
+            if (!existingPaper) {
+                return res.status(404).json({
+                    code: 404,
+                    msg: '未找到该论文',
+                    data: null
+                });
             }
+            // logger.info(`existingPaper.userId: ${existingPaper.userid}, req.user.id: ${req.user.id}`);
+
+            // 检查是否有权限修改（只能修改自己创建的论文）
+            // PostgreSQL 返回的列名是小写的
+            if (existingPaper.userid !== req.user.id) {
+                return res.status(403).json({
+                    code: 403,
+                    msg: '没有权限修改此论文',
+                    data: null
+                });
+            }
+
+            const paper = await Paper.update(req.params.id, req.body);
+
             logger.info(`论文已更新: ${paper.title}`);
-            res.json(paper);
+
+            res.json({
+                code: 200,
+                msg: '论文更新成功',
+                data: paper
+            });
         } catch (error) {
+            logger.error(`更新论文失败: ${error.message}`);
+
+            if (error.message === '论文文件已存在') {
+                return res.status(400).json({
+                    code: 400,
+                    msg: error.message,
+                    data: null
+                });
+            }
+
             next(error);
         }
     }
 
     static async deletePaper(req, res, next) {
         try {
-            const paper = await Paper.delete(req.params.id);
-            if (!paper) {
-                return res.status(404).json({ message: '未找到该论文' });
+            // 首先检查论文是否存在
+            const existingPaper = await Paper.findById(req.params.id);
+            if (!existingPaper) {
+                return res.status(404).json({
+                    code: 404,
+                    msg: '未找到该论文',
+                    data: null
+                });
             }
-            logger.info(`论文已删除: ${paper.title}`);
-            res.json({ message: '论文删除成功' });
+
+            // 检查是否有权限删除（只能删除自己创建的论文）
+            if (existingPaper.userid !== req.user.id) {
+                return res.status(403).json({
+                    code: 403,
+                    msg: '没有权限删除此论文',
+                    data: null
+                });
+            }
+
+            // 执行删除操作
+            const paper = await Paper.delete(req.params.id);
+            
+            logger.info(`论文已删除: ${paper.title}, ID: ${paper.id}, 删除者: ${req.user.username}`);
+            
+            res.json({
+                code: 200,
+                msg: '论文删除成功',
+                data: {
+                    id: paper.id,
+                    title: paper.title
+                }
+            });
         } catch (error) {
+            logger.error(`删除论文失败: ${error.message}`);
             next(error);
         }
     }
 
     static async getPapers(req, res, next) {
         try {
-            const papers = await Paper.findAll();
-            res.json(papers);
+            const { id, title, author, category } = req.query;
+
+            // 如果指定了 ID，优先按 ID 查询
+            if (id) {
+                const paper = await Paper.findById(id);
+                if (!paper) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到指定ID的论文',
+                        data: null
+                    });
+                }
+
+                // 如果同时指定了其他条件，验证是否匹配
+                if (title && !paper.title.toLowerCase().includes(title.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的论文',
+                        data: null
+                    });
+                }
+                if (author && !paper.author.toLowerCase().includes(author.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的论文',
+                        data: null
+                    });
+                }
+                if (category && !paper.category.toLowerCase().includes(category.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的论文',
+                        data: null
+                    });
+                }
+
+                return res.json({
+                    code: 200,
+                    msg: '查询成功',
+                    data: [paper],
+                    total: 1
+                });
+            }
+
+            // 如果没有指定 ID，则按其他条件查询
+            const queryParams = {};
+            if (title) queryParams.title = title;
+            if (author) queryParams.author = author;
+            if (category) queryParams.category = category;
+
+            const papers = await Paper.findByQuery(queryParams);
+
+            res.json({
+                code: 200,
+                msg: '查询成功',
+                data: papers,
+                total: papers.length
+            });
         } catch (error) {
+            logger.error(`查询论文失败: ${error.message}`);
             next(error);
         }
     }

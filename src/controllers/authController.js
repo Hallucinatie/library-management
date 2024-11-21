@@ -52,6 +52,7 @@ class AuthController {
             );
 
             logger.info(`管理员 ${username} 登录成功`);
+            res.setHeader('Authorization', `Bearer ${token}`);
             
             // 返回用户信息和token
             res.json({
@@ -116,6 +117,7 @@ class AuthController {
             );
 
             logger.info(`用户 ${username} 登录成功`);
+            res.setHeader('Authorization', `Bearer ${token}`);
             
             // 返回用户信息和token
             res.json({
