@@ -3,28 +3,28 @@ const { pool } = require('../config/database');
 class Book {
     // 创建新书籍
     static async create(bookData) {
-        const { title, author, isbn, quantity, description, category, publisher, publishDate, location } = bookData;
+        const { title, author, isbn, quantity, description, category, publisher, publishDate } = bookData;
         const query = `
-            INSERT INTO books (title, author, isbn, quantity, description, category, publisher, publishDate, location)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            INSERT INTO books (title, author, isbn, quantity, description, category, publisher, publishDate)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
         `;
-        const values = [title, author, isbn, quantity, description, category, publisher, publishDate, location];
+        const values = [title, author, isbn, quantity, description, category, publisher, publishDate];
         const { rows } = await pool.query(query, values);
         return rows[0];
     }
 
     // 更新书籍信息
     static async update(id, bookData) {
-        const { title, author, isbn, quantity, description, category, publisher, publishDate, location } = bookData;
+        const { title, author, isbn, quantity, description, category, publisher, publishDate } = bookData;
         const query = `
             UPDATE books 
             SET title = $1, author = $2, isbn = $3, quantity = $4, description = $5,
-                category = $6, publisher = $7, publishDate = $8, location = $9
-            WHERE id = $10
+                category = $6, publisher = $7, publishDate = $8
+            WHERE id = $9
             RETURNING *
         `;
-        const values = [title, author, isbn, quantity, description, category, publisher, publishDate, location, id];
+        const values = [title, author, isbn, quantity, description, category, publisher, publishDate, id];
         const { rows } = await pool.query(query, values);
         return rows[0];
     }

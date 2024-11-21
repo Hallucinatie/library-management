@@ -21,7 +21,6 @@ CREATE TABLE books (
     category VARCHAR(50),
     publisher VARCHAR(100),
     publishDate DATE,
-    location VARCHAR(50), -- 图书馆中的位置
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
