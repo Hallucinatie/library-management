@@ -47,8 +47,15 @@ class UserController {
                 return res.status(404).json({ message: '图书不存在' });
             }
             
-            if (book.quantity <= 0) {
-                return res.status(400).json({ message: '图书库存不足' });
+            const availableQuantity = await Book.getAvailableQuantity(bookId);
+            if (availableQuantity <= 0) {
+                return res.status(400).json({ message: '图书已全部借出' });
+            }
+
+            // 更新借出数量
+            const updatedBook = await Book.updateLoans(bookId, true);
+            if (!updatedBook) {
+                return res.status(400).json({ message: '借阅失败，图书可能已被借出' });
             }
 
             // 创建借阅记录
@@ -56,12 +63,6 @@ class UserController {
                 userId: req.user.id,
                 bookId,
                 dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30天后
-            });
-
-            // 更新图书库存
-            await Book.update(bookId, { 
-                ...book, 
-                quantity: book.quantity - 1 
             });
 
             logger.info(`用户 ${req.user.username} 借阅了图书: ${book.title}`);
@@ -80,14 +81,13 @@ class UserController {
                 return res.status(404).json({ message: '借阅记录不存在' });
             }
 
-            // 更新图书库存
-            const book = await Book.findById(borrowLog.bookId);
-            await Book.update(borrowLog.bookId, {
-                ...book,
-                quantity: book.quantity + 1
-            });
+            // 更新借出数量
+            const updatedBook = await Book.updateLoans(borrowLog.bookId, false);
+            if (!updatedBook) {
+                return res.status(400).json({ message: '归还失败，请联系管理员' });
+            }
 
-            logger.info(`用户 ${req.user.username} 归还了图书: ${book.title}`);
+            logger.info(`用户 ${req.user.username} 归还了图书: ${updatedBook.title}`);
             res.json(borrowLog);
         } catch (error) {
             next(error);

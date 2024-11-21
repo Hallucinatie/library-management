@@ -17,6 +17,7 @@ CREATE TABLE books (
     author VARCHAR(100) NOT NULL,
     isbn VARCHAR(13) UNIQUE NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 0,
+    loans INTEGER NOT NULL DEFAULT 0,
     description TEXT,
     category VARCHAR(50),
     publisher VARCHAR(100),
@@ -114,6 +115,10 @@ ALTER TABLE papers ADD CONSTRAINT valid_downloadCount
 
 ALTER TABLE borrowLogs ADD CONSTRAINT valid_dates 
     CHECK (dueDate > borrowDate);
+
+-- 添加约束确保借出数量不超过总数量
+ALTER TABLE books ADD CONSTRAINT valid_loans 
+    CHECK (loans >= 0 AND loans <= quantity);
 
 -- 添加一些示例数据
 INSERT INTO users (username, password, email, role) VALUES

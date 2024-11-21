@@ -5,8 +5,8 @@ class Book {
     static async create(bookData) {
         const { title, author, isbn, quantity, description, category, publisher, publishDate } = bookData;
         const query = `
-            INSERT INTO books (title, author, isbn, quantity, description, category, publisher, publishDate)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            INSERT INTO books (title, author, isbn, quantity, loans, description, category, publisher, publishDate)
+            VALUES ($1, $2, $3, $4, 0, $5, $6, $7, $8)
             RETURNING *
         `;
         const values = [title, author, isbn, quantity, description, category, publisher, publishDate];
@@ -27,6 +27,26 @@ class Book {
         const values = [title, author, isbn, quantity, description, category, publisher, publishDate, id];
         const { rows } = await pool.query(query, values);
         return rows[0];
+    }
+
+    // 更新借出数量
+    static async updateLoans(id, increment = true) {
+        const query = `
+            UPDATE books 
+            SET loans = loans ${increment ? '+' : '-'} 1
+            WHERE id = $1 AND 
+                  ${increment ? 'loans < quantity' : 'loans > 0'}
+            RETURNING *
+        `;
+        const { rows } = await pool.query(query, [id]);
+        return rows[0];
+    }
+
+    // 获取可借数量
+    static async getAvailableQuantity(id) {
+        const query = 'SELECT quantity - loans as available FROM books WHERE id = $1';
+        const { rows } = await pool.query(query, [id]);
+        return rows[0]?.available || 0;
     }
 
     // 删除书籍
