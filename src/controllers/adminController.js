@@ -168,6 +168,52 @@ class AdminController {
         }
     }
 
+    static async getBorrowLogById(req, res, next) {
+        try {
+            const borrowLog = await BorrowLog.findById(req.params.id); 
+            if (!borrowLog) {
+                return res.status(404).json({ message: '未找到该借阅记录' });
+            }
+            res.json(borrowLog);
+        } catch (error) {
+            next(error);
+        }
+    }
+    
+    static async getBorrowLogsByUserId(req, res, next) {
+        try {
+            const userExists = await User.findById(req.params.userId);
+            if (!userExists) {
+                return res.status(404).json({ message: '用户不存在' });
+            }
+    
+            const borrowLogs = await BorrowLog.findByUserId(req.params.userId);
+            if (borrowLogs.length === 0) {
+                return res.status(404).json({ message: '未找到该用户的借阅记录' });
+            }
+            res.json(borrowLogs);
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async getBorrowLogsByBookId(req, res, next) {
+        try {
+            const bookExists = await Book.findById(req.params.bookId);
+            if (!bookExists) {
+                return res.status(404).json({ message: '书籍不存在' });
+            }
+
+            const borrowLogs = await BorrowLog.findByBookId(req.params.bookId);
+            if (borrowLogs.length === 0) {
+                return res.status(404).json({ message: '未找到与此书籍相关的借阅记录' });
+            }
+            res.json(borrowLogs);
+        } catch (error) {
+            next(error);
+        }
+    }
+    
     // 统计信息
     static async getStatistics(req, res, next) {
         try {
