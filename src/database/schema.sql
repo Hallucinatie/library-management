@@ -52,8 +52,6 @@ CREATE TABLE borrowLogs (
     dueDate TIMESTAMP NOT NULL,
     returnDate TIMESTAMP,
     status VARCHAR(20) NOT NULL DEFAULT 'borrowed', -- 'borrowed' 或 'returned'
-    fine DECIMAL(10,2) DEFAULT 0.00, -- 逾期罚款
-    notes TEXT,
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -64,7 +62,6 @@ CREATE TABLE downloadLogs (
     userId INTEGER REFERENCES users(id),
     paperId INTEGER REFERENCES papers(id),
     downloadDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ipAddress VARCHAR(45),
     createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

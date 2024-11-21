@@ -50,8 +50,7 @@ const idParamValidation = () => [
 // 借阅验证
 const borrowValidationRules = () => [
     body('bookId').isInt().withMessage('图书ID必须是整数'),
-    body('dueDate').optional().isISO8601().withMessage('归还日期格式无效'),
-    body('notes').optional().isString()
+    body('dueDate').optional().isISO8601().withMessage('归还日期格式无效')
 ];
 
 module.exports = {

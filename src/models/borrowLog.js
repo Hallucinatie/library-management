@@ -3,13 +3,13 @@ const { pool } = require('../config/database');
 class BorrowLog {
     // 创建借阅记录
     static async create(borrowData) {
-        const { userId, bookId, borrowDate, dueDate, notes } = borrowData;
+        const { userId, bookId, borrowDate, dueDate } = borrowData;
         const query = `
-            INSERT INTO borrowLogs (userId, bookId, borrowDate, dueDate, notes, status)
-            VALUES ($1, $2, $3, $4, $5, 'borrowed')
+            INSERT INTO borrowLogs (userId, bookId, borrowDate, dueDate, status)
+            VALUES ($1, $2, $3, $4, 'borrowed')
             RETURNING *
         `;
-        const values = [userId, bookId, borrowDate || new Date(), dueDate, notes];
+        const values = [userId, bookId, borrowDate || new Date(), dueDate];
         const { rows } = await pool.query(query, values);
         return rows[0];
     }
