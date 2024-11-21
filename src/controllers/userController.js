@@ -9,7 +9,8 @@ class UserController {
         try {
             const paperData = {
                 ...req.body,
-                user_id: req.user.id
+                userId: req.user.id,
+                fileUrl: req.body.fileUrl
             };
             const paper = await Paper.create(paperData);
             logger.info(`用户 ${req.user.username} 上传了新论文: ${paper.title}`);
@@ -25,19 +26,22 @@ class UserController {
             if (!paper) {
                 return res.status(404).json({ message: '论文不存在' });
             }
-            // 这里应该有文件下载的具体实现
+
+            // 更新下载次数
+            await Paper.incrementDownloadCount(paper.id);
+            
             logger.info(`用户 ${req.user.username} 下载了论文: ${paper.title}`);
-            res.json({ file_url: paper.file_url });
+            res.json({ fileUrl: paper.fileUrl });
         } catch (error) {
             next(error);
         }
     }
 
-    // 图书操作
+    // 借阅操作
     static async borrowBook(req, res, next) {
         try {
-            const { book_id } = req.body;
-            const book = await Book.findById(book_id);
+            const { bookId } = req.body;
+            const book = await Book.findById(bookId);
             
             if (!book) {
                 return res.status(404).json({ message: '图书不存在' });
@@ -49,13 +53,13 @@ class UserController {
 
             // 创建借阅记录
             const borrowLog = await BorrowLog.create({
-                user_id: req.user.id,
-                book_id,
-                due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30天后
+                userId: req.user.id,
+                bookId,
+                dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30天后
             });
 
             // 更新图书库存
-            await Book.update(book_id, { 
+            await Book.update(bookId, { 
                 ...book, 
                 quantity: book.quantity - 1 
             });
@@ -69,16 +73,16 @@ class UserController {
 
     static async returnBook(req, res, next) {
         try {
-            const { borrow_id } = req.body;
-            const borrowLog = await BorrowLog.return(borrow_id);
+            const { borrowId } = req.body;
+            const borrowLog = await BorrowLog.return(borrowId);
             
             if (!borrowLog) {
                 return res.status(404).json({ message: '借阅记录不存在' });
             }
 
             // 更新图书库存
-            const book = await Book.findById(borrowLog.book_id);
-            await Book.update(borrowLog.book_id, {
+            const book = await Book.findById(borrowLog.bookId);
+            await Book.update(borrowLog.bookId, {
                 ...book,
                 quantity: book.quantity + 1
             });

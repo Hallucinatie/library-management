@@ -6,8 +6,8 @@ CREATE TABLE users (
     email VARCHAR(100) UNIQUE NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'user', -- 'admin' 或 'user'
     status VARCHAR(20) NOT NULL DEFAULT 'active', -- 'active' 或 'inactive'
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 图书表
@@ -20,10 +20,10 @@ CREATE TABLE books (
     description TEXT,
     category VARCHAR(50),
     publisher VARCHAR(100),
-    publish_date DATE,
+    publishDate DATE,
     location VARCHAR(50), -- 图书馆中的位置
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 论文表
@@ -33,88 +33,88 @@ CREATE TABLE papers (
     author VARCHAR(100) NOT NULL,
     abstract TEXT,
     keywords TEXT[],
-    file_url VARCHAR(255) NOT NULL,
-    is_public BOOLEAN DEFAULT false,
-    user_id INTEGER REFERENCES users(id),
-    download_count INTEGER DEFAULT 0,
-    publication_date DATE,
+    fileUrl VARCHAR(255) NOT NULL,
+    isPublic BOOLEAN DEFAULT false,
+    userId INTEGER REFERENCES users(id),
+    downloadCount INTEGER DEFAULT 0,
+    publicationDate DATE,
     category VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 借阅记录表
-CREATE TABLE borrow_logs (
+CREATE TABLE borrowLogs (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
-    book_id INTEGER REFERENCES books(id),
-    borrow_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    due_date TIMESTAMP NOT NULL,
-    return_date TIMESTAMP,
+    userId INTEGER REFERENCES users(id),
+    bookId INTEGER REFERENCES books(id),
+    borrowDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    dueDate TIMESTAMP NOT NULL,
+    returnDate TIMESTAMP,
     status VARCHAR(20) NOT NULL DEFAULT 'borrowed', -- 'borrowed' 或 'returned'
     fine DECIMAL(10,2) DEFAULT 0.00, -- 逾期罚款
     notes TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 下载记录表
-CREATE TABLE download_logs (
+CREATE TABLE downloadLogs (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
-    paper_id INTEGER REFERENCES papers(id),
-    download_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address VARCHAR(45),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    userId INTEGER REFERENCES users(id),
+    paperId INTEGER REFERENCES papers(id),
+    downloadDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    ipAddress VARCHAR(45),
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 创建索引
 CREATE INDEX idx_books_isbn ON books(isbn);
-CREATE INDEX idx_papers_user_id ON papers(user_id);
-CREATE INDEX idx_borrow_logs_user_id ON borrow_logs(user_id);
-CREATE INDEX idx_borrow_logs_book_id ON borrow_logs(book_id);
-CREATE INDEX idx_download_logs_user_id ON download_logs(user_id);
-CREATE INDEX idx_download_logs_paper_id ON download_logs(paper_id);
+CREATE INDEX idx_papers_userId ON papers(userId);
+CREATE INDEX idx_borrowLogs_userId ON borrowLogs(userId);
+CREATE INDEX idx_borrowLogs_bookId ON borrowLogs(bookId);
+CREATE INDEX idx_downloadLogs_userId ON downloadLogs(userId);
+CREATE INDEX idx_downloadLogs_paperId ON downloadLogs(paperId);
 
 -- 创建更新时间触发器
-CREATE OR REPLACE FUNCTION update_updated_at_column()
+CREATE OR REPLACE FUNCTION updateUpdatedAtColumn()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
+    NEW.updatedAt = CURRENT_TIMESTAMP;
     RETURN NEW;
 END;
 $$ language 'plpgsql';
 
 -- 为所有表添加更新时间触发器
-CREATE TRIGGER update_users_updated_at
+CREATE TRIGGER update_users_updatedAt
     BEFORE UPDATE ON users
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION updateUpdatedAtColumn();
 
-CREATE TRIGGER update_books_updated_at
+CREATE TRIGGER update_books_updatedAt
     BEFORE UPDATE ON books
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION updateUpdatedAtColumn();
 
-CREATE TRIGGER update_papers_updated_at
+CREATE TRIGGER update_papers_updatedAt
     BEFORE UPDATE ON papers
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION updateUpdatedAtColumn();
 
-CREATE TRIGGER update_borrow_logs_updated_at
-    BEFORE UPDATE ON borrow_logs
+CREATE TRIGGER update_borrowLogs_updatedAt
+    BEFORE UPDATE ON borrowLogs
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION updateUpdatedAtColumn();
 
 -- 添加一些基本约束
 ALTER TABLE books ADD CONSTRAINT positive_quantity 
     CHECK (quantity >= 0);
 
-ALTER TABLE papers ADD CONSTRAINT valid_download_count 
-    CHECK (download_count >= 0);
+ALTER TABLE papers ADD CONSTRAINT valid_downloadCount 
+    CHECK (downloadCount >= 0);
 
-ALTER TABLE borrow_logs ADD CONSTRAINT valid_dates 
-    CHECK (due_date > borrow_date);
+ALTER TABLE borrowLogs ADD CONSTRAINT valid_dates 
+    CHECK (dueDate > borrowDate);
 
 -- 添加一些示例数据
 INSERT INTO users (username, password, email, role) VALUES
@@ -127,6 +127,6 @@ INSERT INTO books (title, author, isbn, quantity, description) VALUES
 ('数据结构与算法', '作者2', '9787111111112', 3, '经典算法教材');
 
 -- 添加一些示例论文
-INSERT INTO papers (title, author, abstract, file_url, is_public, user_id) VALUES
+INSERT INTO papers (title, author, abstract, fileUrl, isPublic, userId) VALUES
 ('人工智能研究', '研究者1', '这是一篇关于AI的研究论文', '/papers/1.pdf', true, 1),
 ('机器学习应用', '研究者2', '这是一篇关于机器学习的论文', '/papers/2.pdf', false, 2); 

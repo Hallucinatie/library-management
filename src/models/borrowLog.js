@@ -1,15 +1,15 @@
-const pool = require('../config/database');
+const { pool } = require('../config/database');
 
 class BorrowLog {
     // 创建借阅记录
     static async create(borrowData) {
-        const { user_id, book_id, borrow_date, due_date } = borrowData;
+        const { userId, bookId, borrowDate, dueDate, notes } = borrowData;
         const query = `
-            INSERT INTO borrow_logs (user_id, book_id, borrow_date, due_date, status)
-            VALUES ($1, $2, $3, $4, 'borrowed')
+            INSERT INTO borrowLogs (userId, bookId, borrowDate, dueDate, notes, status)
+            VALUES ($1, $2, $3, $4, $5, 'borrowed')
             RETURNING *
         `;
-        const values = [user_id, book_id, borrow_date || new Date(), due_date];
+        const values = [userId, bookId, borrowDate || new Date(), dueDate, notes];
         const { rows } = await pool.query(query, values);
         return rows[0];
     }
@@ -17,8 +17,8 @@ class BorrowLog {
     // 更新借阅状态（还书）
     static async return(id) {
         const query = `
-            UPDATE borrow_logs 
-            SET status = 'returned', return_date = CURRENT_TIMESTAMP
+            UPDATE borrowLogs 
+            SET status = 'returned', returnDate = CURRENT_TIMESTAMP
             WHERE id = $1 AND status = 'borrowed'
             RETURNING *
         `;
@@ -28,7 +28,7 @@ class BorrowLog {
 
     // 删除借阅记录
     static async delete(id) {
-        const query = 'DELETE FROM borrow_logs WHERE id = $1 RETURNING *';
+        const query = 'DELETE FROM borrowLogs WHERE id = $1 RETURNING *';
         const { rows } = await pool.query(query, [id]);
         return rows[0];
     }
@@ -36,11 +36,11 @@ class BorrowLog {
     // 获取所有借阅记录
     static async findAll() {
         const query = `
-            SELECT bl.*, u.username, b.title as book_title
-            FROM borrow_logs bl
-            JOIN users u ON bl.user_id = u.id
-            JOIN books b ON bl.book_id = b.id
-            ORDER BY bl.borrow_date DESC
+            SELECT bl.*, u.username, b.title as bookTitle
+            FROM borrowLogs bl
+            JOIN users u ON bl.userId = u.id
+            JOIN books b ON bl.bookId = b.id
+            ORDER BY bl.borrowDate DESC
         `;
         const { rows } = await pool.query(query);
         return rows;
@@ -49,11 +49,11 @@ class BorrowLog {
     // 获取用户的借阅记录
     static async findByUserId(userId) {
         const query = `
-            SELECT bl.*, b.title as book_title
-            FROM borrow_logs bl
-            JOIN books b ON bl.book_id = b.id
-            WHERE bl.user_id = $1
-            ORDER BY bl.borrow_date DESC
+            SELECT bl.*, b.title as bookTitle
+            FROM borrowLogs bl
+            JOIN books b ON bl.bookId = b.id
+            WHERE bl.userId = $1
+            ORDER BY bl.borrowDate DESC
         `;
         const { rows } = await pool.query(query, [userId]);
         return rows;
@@ -62,16 +62,43 @@ class BorrowLog {
     // 获取逾期未还的借阅记录
     static async findOverdue() {
         const query = `
-            SELECT bl.*, u.username, b.title as book_title
-            FROM borrow_logs bl
-            JOIN users u ON bl.user_id = u.id
-            JOIN books b ON bl.book_id = b.id
+            SELECT bl.*, u.username, b.title as bookTitle
+            FROM borrowLogs bl
+            JOIN users u ON bl.userId = u.id
+            JOIN books b ON bl.bookId = b.id
             WHERE bl.status = 'borrowed' 
-            AND bl.due_date < CURRENT_DATE
-            ORDER BY bl.due_date ASC
+            AND bl.dueDate < CURRENT_DATE
+            ORDER BY bl.dueDate ASC
         `;
         const { rows } = await pool.query(query);
         return rows;
+    }
+
+    // 计算罚款
+    static async calculateFine(id) {
+        const query = `
+            UPDATE borrowLogs 
+            SET fine = CASE 
+                WHEN status = 'borrowed' AND dueDate < CURRENT_TIMESTAMP 
+                THEN EXTRACT(DAY FROM (CURRENT_TIMESTAMP - dueDate)) * 1.00
+                ELSE fine 
+                END
+            WHERE id = $1
+            RETURNING *
+        `;
+        const { rows } = await pool.query(query, [id]);
+        return rows[0];
+    }
+
+    // 获取用户当前借阅数量
+    static async getCurrentBorrowCount(userId) {
+        const query = `
+            SELECT COUNT(*) as count
+            FROM borrowLogs
+            WHERE userId = $1 AND status = 'borrowed'
+        `;
+        const { rows } = await pool.query(query, [userId]);
+        return parseInt(rows[0].count);
     }
 }
 

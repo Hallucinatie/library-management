@@ -173,22 +173,29 @@ class AdminController {
             // 获取借阅统计
             const borrowStats = await pool.query(`
                 SELECT 
-                    COUNT(*) as total_borrows,
-                    COUNT(DISTINCT user_id) as unique_users,
-                    COUNT(CASE WHEN status = 'borrowed' THEN 1 END) as active_borrows
-                FROM borrow_logs
+                    COUNT(*) as totalBorrows,
+                    COUNT(DISTINCT userId) as uniqueUsers,
+                    COUNT(CASE WHEN status = 'borrowed' THEN 1 END) as activeBorrows
+                FROM borrowLogs
             `);
 
             // 获取资源统计
             const resourceStats = await pool.query(`
                 SELECT 
-                    (SELECT COUNT(*) FROM books) as total_books,
-                    (SELECT COUNT(*) FROM papers) as total_papers
+                    (SELECT COUNT(*) FROM books) as totalBooks,
+                    (SELECT COUNT(*) FROM papers) as totalPapers
             `);
 
             res.json({
-                borrowing: borrowStats.rows[0],
-                resources: resourceStats.rows[0]
+                borrowing: {
+                    totalBorrows: parseInt(borrowStats.rows[0].totalborrows),
+                    uniqueUsers: parseInt(borrowStats.rows[0].uniqueusers),
+                    activeBorrows: parseInt(borrowStats.rows[0].activeborrows)
+                },
+                resources: {
+                    totalBooks: parseInt(resourceStats.rows[0].totalbooks),
+                    totalPapers: parseInt(resourceStats.rows[0].totalpapers)
+                }
             });
         } catch (error) {
             next(error);
