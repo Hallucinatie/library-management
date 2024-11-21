@@ -17,6 +17,7 @@
 │   │   ├── user.js
 │   │   └── borrowLog.js
 │   ├── routes/
+│   │   ├── auth.js
 │   │   ├── admin.js
 │   │   ├── user.js
 │   │   └── guest.js
