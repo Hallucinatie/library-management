@@ -6,6 +6,7 @@ const errorHandler = require('./middleware/errorHandler');
 const adminRoutes = require('./routes/admin');
 const userRoutes = require('./routes/user');
 const guestRoutes = require('./routes/guest');
+const authRoutes = require('./routes/auth');
 const { testConnection } = require('./config/database');
 
 const app = express();
@@ -21,6 +22,7 @@ app.get('/', (req, res) => {
     res.json({ 
         message: 'API 服务器正常运行',
         endpoints: {
+            auth: '/auth/*',
             admin: '/admin/*',
             user: '/user/*',
             guest: '/guest/*'
@@ -28,10 +30,14 @@ app.get('/', (req, res) => {
     });
 });
 
-// 路由配置
+// 路由配置 - 注意顺序！
+// 先配置不需要认证的路由
+app.use('/auth', authRoutes);  // 认证路由放在前面
+app.use('/guest', guestRoutes);
+
+// 再配置需要认证的路由
 app.use('/admin', adminRoutes);
 app.use('/user', userRoutes);
-app.use('/guest', guestRoutes);
 
 // 错误处理中间件
 app.use(errorHandler);

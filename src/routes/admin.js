@@ -2,12 +2,12 @@ const express = require('express');
 const router = express.Router();
 const AdminController = require('../controllers/adminController');
 const { adminAuth } = require('../middleware/auth');
-const { 
-    validate, 
-    bookValidationRules, 
-    paperValidationRules, 
+const {
+    validate,
+    bookValidationRules,
+    paperValidationRules,
     userValidationRules,
-    idParamValidation 
+    idParamValidation
 } = require('../middleware/validator');
 
 // 所有管理员路由都需要管理员权限
