@@ -46,6 +46,19 @@ class BorrowLog {
         return rows;
     }
 
+    // 根据ID获取借阅记录
+    static async findById(id) {
+        const query = `
+            SELECT bl.*, u.username, b.title as book_title
+            FROM borrow_logs bl
+            JOIN users u ON bl.user_id = u.id
+            JOIN books b ON bl.book_id = b.id
+            WHERE bl.id = $1
+    `   ;
+        const { rows } = await pool.query(query, [id]);
+        return rows[0];
+    }
+
     // 获取用户的借阅记录
     static async findByUserId(userId) {
         const query = `
@@ -56,6 +69,19 @@ class BorrowLog {
             ORDER BY bl.borrowDate DESC
         `;
         const { rows } = await pool.query(query, [userId]);
+        return rows;
+    }
+
+    // 获取图书的借阅记录
+    static async findByUserId(bookId) {
+        const query = `
+            SELECT bl.*, b.title as book_title
+            FROM borrow_logs bl
+            JOIN books b ON bl.book_id = b.id
+            WHERE bl.book_id = $1
+            ORDER BY bl.borrow_date DESC
+        `;
+        const { rows } = await pool.query(query, [bookId]);
         return rows;
     }
 
