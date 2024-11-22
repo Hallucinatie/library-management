@@ -10,11 +10,10 @@ const loginValidation = [
     body('password').notEmpty().withMessage('密码不能为空')
 ];
 
-// 登录路由
-router.post('/admin/login', loginValidation, validate, AuthController.adminLogin);
-router.post('/user/login', loginValidation, validate, AuthController.userLogin);
+// 统一的登录路由
+router.post('/login', loginValidation, validate, AuthController.login);
 
 // 用户注册路由
-router.post('/user/register', userValidationRules(), validate, AuthController.register);
+router.post('/register', userValidationRules(), validate, AuthController.register);
 
 module.exports = router; 
