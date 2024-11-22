@@ -1,7 +1,7 @@
 -- 先删除相关的记录
-DELETE FROM downloadLogs WHERE userId IN (SELECT id FROM users WHERE username = 'admin');
-DELETE FROM borrowLogs WHERE userId IN (SELECT id FROM users WHERE username = 'admin');
-DELETE FROM papers WHERE userId IN (SELECT id FROM users WHERE username = 'admin');
+DELETE FROM download_logs WHERE user_id IN (SELECT id FROM users WHERE username = 'admin');
+DELETE FROM borrow_logs WHERE user_id IN (SELECT id FROM users WHERE username = 'admin');
+DELETE FROM papers WHERE user_id IN (SELECT id FROM users WHERE username = 'admin');
 DELETE FROM users WHERE username = 'admin';
 
 -- 插入新的 admin 用户（密码是 "admin123"）

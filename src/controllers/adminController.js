@@ -63,8 +63,8 @@ class AdminController {
 
             const paper = await Paper.create(paperData);
             logger.info(`新论文已添加: ${paper.title}`);
-            res.status(201).json({
-                code: 201,
+            res.status(200).json({
+                code: 200,
                 msg: '论文添加成功',
                 data: paper
             });
@@ -89,7 +89,7 @@ class AdminController {
 
             // 检查是否有权限修改（只能修改自己创建的论文）
             // PostgreSQL 返回的列名是小写的
-            if (existingPaper.userid !== req.user.id) {
+            if (existingPaper.userId !== req.user.id) {
                 return res.status(403).json({
                     code: 403,
                     msg: '没有权限修改此论文',
@@ -134,7 +134,7 @@ class AdminController {
             }
 
             // 检查是否有权限删除（只能删除自己创建的论文）
-            if (existingPaper.userid !== req.user.id) {
+            if (existingPaper.userId !== req.user.id) {
                 return res.status(403).json({
                     code: 403,
                     msg: '没有权限删除此论文',
@@ -144,9 +144,9 @@ class AdminController {
 
             // 执行删除操作
             const paper = await Paper.delete(req.params.id);
-            
+
             logger.info(`论文已删除: ${paper.title}, ID: ${paper.id}, 删除者: ${req.user.username}`);
-            
+
             res.json({
                 code: 200,
                 msg: '论文删除成功',
@@ -298,7 +298,7 @@ class AdminController {
 
     static async getBorrowLogById(req, res, next) {
         try {
-            const borrowLog = await BorrowLog.findById(req.params.id); 
+            const borrowLog = await BorrowLog.findById(req.params.id);
             if (!borrowLog) {
                 return res.status(404).json({ message: '未找到该借阅记录' });
             }
@@ -307,14 +307,14 @@ class AdminController {
             next(error);
         }
     }
-    
+
     static async getBorrowLogsByUserId(req, res, next) {
         try {
             const userExists = await User.findById(req.params.userId);
             if (!userExists) {
                 return res.status(404).json({ message: '用户不存在' });
             }
-    
+
             const borrowLogs = await BorrowLog.findByUserId(req.params.userId);
             if (borrowLogs.length === 0) {
                 return res.status(404).json({ message: '未找到该用户的借阅记录' });
@@ -341,7 +341,7 @@ class AdminController {
             next(error);
         }
     }
-    
+
     // 统计信息
     static async getStatistics(req, res, next) {
         try {
@@ -417,8 +417,8 @@ class AdminController {
             logger.info(`管理员 ${req.user.username} 创建了新管理员账号: ${username}`);
 
             // 返回创建的管理员信息（不包含密码）
-            res.status(201).json({
-                code: 201,
+            res.status(200).json({
+                code: 200,
                 msg: '管理员账号创建成功',
                 data: {
                     id: newAdmin.id,

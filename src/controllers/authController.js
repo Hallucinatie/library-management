@@ -42,10 +42,10 @@ class AuthController {
 
             // 生成 JWT token
             const token = jwt.sign(
-                { 
-                    id: user.id, 
+                {
+                    id: user.id,
                     username: user.username,
-                    role: user.role 
+                    role: user.role
                 },
                 JWT_SECRET,
                 { expiresIn: '24h' }
@@ -53,7 +53,7 @@ class AuthController {
 
             logger.info(`管理员 ${username} 登录成功`);
             res.setHeader('Authorization', `Bearer ${token}`);
-            
+
             // 返回用户信息和token
             res.json({
                 code: 200,
@@ -107,10 +107,10 @@ class AuthController {
 
             // 生成 JWT token
             const token = jwt.sign(
-                { 
-                    id: user.id, 
+                {
+                    id: user.id,
                     username: user.username,
-                    role: user.role 
+                    role: user.role
                 },
                 JWT_SECRET,
                 { expiresIn: '24h' }
@@ -118,7 +118,7 @@ class AuthController {
 
             logger.info(`用户 ${username} 登录成功`);
             res.setHeader('Authorization', `Bearer ${token}`);
-            
+
             // 返回用户信息和token
             res.json({
                 code: 200,
@@ -177,8 +177,8 @@ class AuthController {
             logger.info(`新用户注册: ${username}`);
 
             // 返回创建的用户信息（不包含密码）
-            res.status(201).json({
-                code: 201,
+            res.status(200).json({
+                code: 200,
                 msg: '注册成功',
                 data: {
                     id: newUser.id,
