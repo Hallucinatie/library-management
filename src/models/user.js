@@ -47,16 +47,24 @@ class User {
             userData.role || 'user',
             userData.status || 'active'
         ];
-        const { rows } = await pool.query(query, values);
-        return this._convertToCamelCase(rows[0]);
+
+        try{
+            const { rows } = await pool.query(query, values);
+            return this._convertToCamelCase(rows[0]);
+        }catch(error){
+            if (error.code === '23505') {
+                throw new Error('用户已存在');
+            }
+            throw error;
+        }
     }
 
     // 更新用户信息
     static async update(id, userData) {
         const snakeCaseData = this._convertToSnakeCase(userData);
         const updateFields = [];
-        const values = [];
-        let paramCount = 1;
+        const values = [id];
+        let paramCount = 2;
 
         Object.entries(snakeCaseData).forEach(([key, value]) => {
             updateFields.push(`${key} = $${paramCount}`);
@@ -64,22 +72,42 @@ class User {
             paramCount++;
         });
 
-        values.push(id);
+        if (updateFields.length === 0) {
+            return null;
+        }
+
         const query = `
             UPDATE users 
             SET ${updateFields.join(', ')}
-            WHERE id = $${paramCount}
+            WHERE id = $1
             RETURNING *
         `;
-        const { rows } = await pool.query(query, values);
-        return this._convertToCamelCase(rows[0]);
+
+        try{
+            const { rows } = await pool.query(query, values);
+            return this._convertToCamelCase(rows[0]);
+        }catch(error){
+            if (error.code === '23505') {
+                throw new Error('用户文件已存在');
+            }
+            throw error;
+        }
     }
 
     // 删除用户
     static async delete(id) {
-        const query = 'DELETE FROM users WHERE id = $1 RETURNING *';
-        const { rows } = await pool.query(query, [id]);
-        return this._convertToCamelCase(rows[0]);
+        const query = `
+            DELETE FROM users 
+            WHERE id = $1 
+            RETURNING *
+        `;
+
+        try{
+            const { rows } = await pool.query(query, [id]);
+            return this._convertToCamelCase(rows[0]);
+        }catch(error){
+            throw error;
+        }
     }
 
     // 获取所有用户
@@ -108,6 +136,35 @@ class User {
         const query = 'SELECT * FROM users WHERE email = $1';
         const { rows } = await pool.query(query, [email]);
         return this._convertToCamelCase(rows[0]);
+    }
+
+    static async findByQuery(queryParams = {}) {
+        let query = 'SELECT * FROM users WHERE 1=1';
+        const values = [];
+        let paramCount = 1;
+
+        if (queryParams.id) {
+            query += ` AND id = $${paramCount}`;
+            values.push(queryParams.id);
+            paramCount++;
+        }
+
+        if (queryParams.username) {
+            query += ` AND username ILIKE $${paramCount}`;
+            values.push(`%${queryParams.username}%`);
+            paramCount++;
+        }
+
+        if (queryParams.email) {
+            query += ` AND email ILIKE $${paramCount}`;
+            values.push(`%${queryParams.email}%`);
+            paramCount++;
+        }
+
+        query += ' ORDER BY created_at ASC';
+
+        const { rows } = await pool.query(query, values);
+        return rows.map(row => this._convertToCamelCase(row));
     }
 }
 
