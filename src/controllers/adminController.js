@@ -10,22 +10,43 @@ class AdminController {
     // 书籍管理
     static async addBook(req, res, next) {
         try {
-            const book = await Book.create(req.body);
+            const bookData = {
+                ...req.body,
+                userId: req.user.id  // 这里自动绑定当前登录用户的ID
+            };
+
+            const book = await Book.create(bookData);
             logger.info(`新书籍已添加: ${book.title}`);
-            res.status(201).json(book);
+            res.status(200).json({
+                code: 200,
+                msg: '书籍添加成功',
+                data: book
+            });
         } catch (error) {
+            logger.error(`添加书籍失败: ${error.message}`);
             next(error);
         }
     }
 
     static async updateBook(req, res, next) {
         try {
-            const book = await Book.update(req.params.id, req.body);
-            if (!book) {
-                return res.status(404).json({ message: '未找到该书籍' });
+            const existingBook = await Book.findById(req.params.id);
+            if (!existingBook) {
+                return res.status(404).json({
+                    code: 404,
+                    msg: '未找到该书籍',
+                    data: null
+                });
             }
+
+            const book = await Book.update(req.params.id, req.body);
+            
             logger.info(`书籍已更新: ${book.title}`);
-            res.json(book);
+            res.json({
+                code: 200,
+                msg: '书籍更新成功',
+                data: book
+            });
         } catch (error) {
             next(error);
         }
@@ -33,23 +54,104 @@ class AdminController {
 
     static async deleteBook(req, res, next) {
         try {
-            const book = await Book.delete(req.params.id);
-            if (!book) {
-                return res.status(404).json({ message: '未找到该书籍' });
+            const existingBook = await Book.findById(req.params.id);
+            if (!existingBook) {
+                return res.status(404).json({
+                    code: 404,
+                    msg: '未找到该书籍',
+                    data: null
+                });
             }
-            logger.info(`书籍已删除: ${book.title}`);
-            res.json({ message: '书籍删除成功' });
+
+            const book = await Book.delete(req.params.id);
+            
+            logger.info(`书籍已删除: ${book.title}, ID: ${book.id}, 删除者: ${req.user.username}`);
+            res.json({ 
+                code:200,
+                msg: '书籍删除成功',
+                data:{
+                    id:book.id,
+                    title:book.title
+                }
+            });
         } catch (error) {
+            logger.error(`删除书籍失败: ${error.message}`);
             next(error);
         }
     }
 
     static async getBooks(req, res, next) {
         try {
-            const books = await Book.findAll();
-            res.json(books);
+            const {id,title,author,isbn,category}=req.query;
+            
+            if(id){
+                const book=await Book.findById(id);
+                if(!book){
+                    return res.status(404).json({
+                        code:404,
+                        msg:'未找到指定ID的书籍',
+                        data: null
+                    });
+                }
+
+                // 如果同时指定了其他条件，验证是否匹配
+                if (title && !book.title.toLowerCase().includes(title.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的书籍',
+                        data: null
+                    });
+                }
+                if (author && !book.author.toLowerCase().includes(author.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的书籍',
+                        data: null
+                    });
+                }
+                if (isbn && !book.isbn.toLowerCase().includes(isbn.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的书籍',
+                        data: null
+                    });
+                }
+                if (category && !book.category.toLowerCase().includes(category.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的书籍',
+                        data: null
+                    });
+                }
+
+                return res.json({
+                    code: 200,
+                    msg: '查询成功',
+                    data: [book],
+                    total: 1
+                });
+            }
+
+            // 如果没有指定 ID，则按其他条件查询
+            const queryParams = {};
+            if (title) queryParams.title = title;
+            if (author) queryParams.author = author;
+            if(isbn) queryParams.isbn=isbn;
+            if (category) queryParams.category = category;
+
+            const books = await Book.findByQuery(queryParams);
+
+            res.json({
+                code: 200,
+                msg: '查询成功',
+                data: books,
+                total: books.length
+            });
         } catch (error) {
+            logger.error(`查询书籍失败: ${error.message}`);
             next(error);
+
+
         }
     }
 
@@ -230,45 +332,131 @@ class AdminController {
     // 用户管理
     static async addUser(req, res, next) {
         try {
+            const UserData = {
+                ...req.body,
+                userId: req.user.id  
+            };
+
             const user = await User.create(req.body);
             logger.info(`新用户已添加: ${user.username}`);
-            res.status(201).json(user);
+            res.status(200).json({
+                code: 200,
+                msg: '用户添加成功',
+                data: user
+            });
         } catch (error) {
+            logger.error(`添加用户失败: ${error.message}`);
             next(error);
         }
     }
 
     static async updateUser(req, res, next) {
         try {
-            const user = await User.update(req.params.id, req.body);
-            if (!user) {
-                return res.status(404).json({ message: '未找到该用户' });
+            const existingUser = await User.findById(req.params.id);
+            if (!existingUser) {
+                return res.status(404).json({
+                    code: 404,
+                    msg: '未找到该用户',
+                    data: null
+                });
             }
+            
+            const user = await User.update(req.params.id, req.body);
+            
             logger.info(`用户已更新: ${user.username}`);
-            res.json(user);
+
+            res.json({
+                code:200,
+                msg:"用户更新成功",
+                data: user
+            });
         } catch (error) {
+            logger.error(`更新用户失败: ${error.message}`);
             next(error);
         }
     }
 
     static async deleteUser(req, res, next) {
         try {
-            const user = await User.delete(req.params.id);
-            if (!user) {
-                return res.status(404).json({ message: '未找到该用户' });
+            const existingUser = await User.findById(req.params.id);
+            if (!existingUser) {
+                return res.status(404).json({
+                    code: 404,
+                    msg: '未找到该用户',
+                    data: null
+                });
             }
+
+            const user = await User.delete(req.params.id);
+            
             logger.info(`用户已删除: ${user.username}`);
-            res.json({ message: '用户删除成功' });
+            
+            res.json({
+                code:200,
+                msg:"用户删除成功",
+                data: {
+                    id:user.id,
+                    username:user.username
+                }
+            });
         } catch (error) {
+            logger.error(`删除用户失败: ${error.message}`);
             next(error);
         }
     }
 
     static async getUsers(req, res, next) {
         try {
-            const users = await User.findAll();
-            res.json(users);
+            const {id,username,email}=req.query;
+            
+            if (id) {
+                const user = await User.findById(id);
+                if (!user) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到指定ID的用户',
+                        data: null
+                    });
+                }
+
+                // 如果同时指定了其他条件，验证是否匹配
+                if (username && !user.username.toLowerCase().includes(username.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的用户',
+                        data: null
+                    });
+                }
+                if (email && !user.email.toLowerCase().includes(email.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的用户',
+                        data: null
+                    });
+                }
+
+                return res.json({
+                    code: 200,
+                    msg: '查询成功',
+                    data: [user],
+                    total: 1
+                });
+            }
+
+            const queryParams = {};
+            if (username) queryParams.username = username;
+            if (email) queryParams.email = email;
+
+            const users = await User.findByQuery(queryParams);
+
+            res.json({
+                code: 200,
+                msg: '查询成功',
+                data: users,
+                total: users.length
+            });
         } catch (error) {
+            logger.error(`查询用户失败: ${error.message}`);
             next(error);
         }
     }

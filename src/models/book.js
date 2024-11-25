@@ -43,6 +43,7 @@ class Book {
     // 修改现有方法以使用转换函数
     static async create(bookData) {
         const snakeCaseData = this._convertToSnakeCase(bookData);
+        
         const query = `
             INSERT INTO books (title, author, isbn, quantity, loans, description, 
                              category, publisher, publish_date)
@@ -60,15 +61,23 @@ class Book {
             bookData.publisher,
             snakeCaseData.publish_date
         ];
-        const { rows } = await pool.query(query, values);
-        return this._convertToCamelCase(rows[0]);
+        
+        try {
+            const { rows } = await pool.query(query, values);
+            return this._convertToCamelCase(rows[0]);
+        } catch (error) {
+            if (error.code === '23505') {
+                throw new Error('图书已存在');
+            }
+            throw error;
+        }
     }
 
     static async update(id, bookData) {
         const snakeCaseData = this._convertToSnakeCase(bookData);
         const updateFields = [];
-        const values = [];
-        let paramCount = 1;
+        const values = [id];
+        let paramCount = 2;
 
         Object.entries(snakeCaseData).forEach(([key, value]) => {
             updateFields.push(`${key} = $${paramCount}`);
@@ -76,16 +85,28 @@ class Book {
             paramCount++;
         });
 
-        values.push(id);
+        if (updateFields.length === 0) {
+            return null;
+        }
+
         const query = `
             UPDATE books 
             SET ${updateFields.join(', ')}
-            WHERE id = $${paramCount}
+            WHERE id = $1
             RETURNING *
         `;
-        const { rows } = await pool.query(query, values);
-        return this._convertToCamelCase(rows[0]);
+
+        try{
+            const { rows } = await pool.query(query, values);
+            return this._convertToCamelCase(rows[0]);
+        }catch(error){
+            if(error.code=='23505'){
+                throw new Error('图书文件已存在');
+            }
+            throw error;
+        }
     }
+
 
     static async findAll() {
         const query = 'SELECT * FROM books ORDER BY created_at DESC';
@@ -99,10 +120,55 @@ class Book {
         return this._convertToCamelCase(rows[0]);
     }
 
+    static async findByQuery(queryParams = {}) {
+        let query = 'SELECT * FROM books WHERE 1=1';
+        const values = [];
+        let paramCount = 1;
+
+        if (queryParams.id) {
+            query += ` AND id = $${paramCount}`;
+            values.push(queryParams.id);
+            paramCount++;
+        }
+
+        if (queryParams.title) {
+            query += ` AND title ILIKE $${paramCount}`;
+            values.push(`%${queryParams.title}%`);
+            paramCount++;
+        }
+
+        if (queryParams.author) {
+            query += ` AND author ILIKE $${paramCount}`;
+            values.push(`%${queryParams.author}%`);
+            paramCount++;
+        }
+
+        if (queryParams.category) {
+            query += ` AND category ILIKE $${paramCount}`;
+            values.push(`%${queryParams.category}%`);
+            paramCount++;
+        }
+
+        query += ' ORDER BY created_at ASC';
+
+        const { rows } = await pool.query(query, values);
+        return rows.map(row => this._convertToCamelCase(row));
+    }
+
+
     static async delete(id) {
-        const query = 'DELETE FROM books WHERE id = $1 RETURNING *';
-        const { rows } = await pool.query(query, [id]);
-        return this._convertToCamelCase(rows[0]);
+        const query = `
+            DELETE FROM books 
+            WHERE id = $1 
+            RETURNING *
+            `;
+
+        try{
+            const { rows } = await pool.query(query, [id]);
+            return this._convertToCamelCase(rows[0]);
+        }catch(error){
+            throw error;
+        }
     }
 
     static async updateLoans(id, increment = true) {
