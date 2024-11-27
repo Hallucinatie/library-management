@@ -567,62 +567,38 @@ class AdminController {
         }
     }
 
-  static async getBorrowLogs(req, res, next) {
-    try {
-      const borrowLogs = await BorrowLog.findAll();
-      res.json(borrowLogs);
-    } catch (error) {
-      next(error);
-    }
-  }
+    static async getBorrowLogs(req, res, next) {
+        try {
+            const { id, userID, bookID, borrowDate, dueDate, returnDate, status } = req.query;
 
-  static async getBorrowLogById(req, res, next) {
-    try {
-      const borrowLog = await BorrowLog.findById(req.params.id);
-      if (!borrowLog) {
-        return res.status(404).json({ message: "未找到该借阅记录" });
-      }
-      res.json(borrowLog);
-    } catch (error) {
-      next(error);
-    }
-  }
+            if (status.toLowerCase() !== "borrowed" && status.toLowerCase() !== "returned" && status) {
+                return res.status(400).json({
+                    code: 400,
+                    messsage: `status关键字必须为 borrowed 或 returned, 传入 ${status}.`,
+                });
+            }
 
-  static async getBorrowLogsByUserId(req, res, next) {
-    try {
-      const userExists = await User.findById(req.params.userId);
-      if (!userExists) {
-        return res.status(404).json({ message: "用户不存在" });
-      }
+            const queryParams = { id, userID, bookID, borrowDate, dueDate, returnDate, status };
+            const findBorrowLogs = await BorrowLog.findByQuery(queryParams);
 
-      const borrowLogs = await BorrowLog.findByUserId(req.params.userId);
-      if (borrowLogs.length === 0) {
-        return res.status(404).json({ message: "未找到该用户的借阅记录" });
+            if (findBorrowLogs.length === 0) {
+                return res.status(404).json({
+                    code: 404,
+                    messsage: "未找到符合条件的论文",
+                });
+            }
+    
+            res.json({
+                code: 200,
+                msg: "查询成功",
+                data: findBorrowLogs,
+                total: findBorrowLogs.length,
+            });
+        } catch (error) {
+            logger.error(`查询论文失败: ${error.message}`);
+            next(error);
+        }
       }
-      res.json(borrowLogs);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  static async getBorrowLogsByBookId(req, res, next) {
-    try {
-      const bookExists = await Book.findById(req.params.bookId);
-      if (!bookExists) {
-        return res.status(404).json({ message: "书籍不存在" });
-      }
-
-      const borrowLogs = await BorrowLog.findByBookId(req.params.bookId);
-      if (borrowLogs.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "未找到与此书籍相关的借阅记录" });
-      }
-      res.json(borrowLogs);
-    } catch (error) {
-      next(error);
-    }
-  }
 
   // 统计信息
   static async getStatistics(req, res, next) {

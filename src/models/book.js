@@ -187,7 +187,7 @@ class Book {
     }
 
     static async getAvailableQuantity(id) {
-        const query = 'SELECT quantity - loans as available FROM books WHERE id = $1 AND status = 1';
+        const query = 'SELECT quantity - loans as available FROM books WHERE id = $1'; // AND status = 1';
         const { rows } = await pool.query(query, [id]);
         return rows[0]?.available || 0;
     }
