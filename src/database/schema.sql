@@ -18,6 +18,7 @@ CREATE TABLE books (
     isbn VARCHAR(13) UNIQUE NOT NULL,
     quantity INTEGER NOT NULL DEFAULT 0,
     loans INTEGER NOT NULL DEFAULT 0,
+    loans_count INTEGER NOT NULL DEFAULT 0,
     description TEXT,
     category VARCHAR(50),
     publisher VARCHAR(100),

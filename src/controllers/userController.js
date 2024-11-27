@@ -199,18 +199,18 @@ class UserController {
             const existingBookbook = await Book.findById(bookId);
             
             if (!existingBookbook) {
-                return res.status(404).json({ code: 404, message: '图书不存在' });
+                return res.status(404).json({code: 404, message: '图书不存在'});
             }
             
             const availableQuantity = await Book.getAvailableQuantity(bookId);
             if (availableQuantity <= 0) {
-                return res.status(400).json({ message: '图书已全部借出' });
+                return res.status(400).json({code: 400, message: '图书已全部借出'});
             }
 
             // 更新借出数量
             const updatedBook = await Book.updateLoans(bookId, true);
             if (!updatedBook) {
-                return res.status(400).json({ message: '借阅失败，图书可能已被借出' });
+                return res.status(400).json({code: 400, message: '借阅失败，图书可能已被借出'});
             }
 
             // 创建借阅记录
@@ -220,8 +220,13 @@ class UserController {
                 dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30天后
             });
 
-            logger.info(`用户 ${req.user.username} 借阅了图书: ${book.title}`);
-            res.status(201).json(borrowLog);
+            logger.info(`用户 ${req.user.username} 借阅了图书: ${updatedBook.title}`);
+            res.status(201).json({
+                code: 201,
+                msg: '借阅成功',
+                data: borrowLog,
+                borrowLogID: borrowLog.id
+            });
         } catch (error) {
             next(error);
         }
@@ -233,17 +238,21 @@ class UserController {
             const borrowLog = await BorrowLog.return(borrowId);
             
             if (!borrowLog) {
-                return res.status(404).json({ message: '借阅记录不存在' });
+                return res.status(404).json({code: 404, message: '借阅记录不存在'});
             }
 
             // 更新借出数量
             const updatedBook = await Book.updateLoans(borrowLog.bookId, false);
             if (!updatedBook) {
-                return res.status(400).json({ message: '归还失败，请联系管理员' });
+                return res.status(400).json({code: 400, message: '归还失败，请联系管理员'});
             }
 
             logger.info(`用户 ${req.user.username} 归还了图书: ${updatedBook.title}`);
-            res.json(borrowLog);
+            res.status(201).json({
+                code: 201,
+                msg: '归还成功',
+                data: borrowLog
+            });
         } catch (error) {
             next(error);
         }
