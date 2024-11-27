@@ -300,17 +300,57 @@ class AdminController {
   // 用户管理
   static async addUser(req, res, next) {
     try {
-      const UserData = {
-        ...req.body,
-        userId: req.user.id,
-      };
+      const { username, password, email } = req.body;
 
-      const user = await User.create(req.body);
-      logger.info(`新用户已添加: ${user.username}`);
+
+      // 检查用户名是否已存在
+      const existingUser = await User.findByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({
+          code: 400,
+          msg: "用户名已存在",
+          data: null,
+        });
+      }
+
+      // 检查邮箱是否已存在
+      const existingEmail = await User.findByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({
+          code: 400,
+          msg: "邮箱已被使用",
+          data: null,
+        });
+      }
+
+      // 加密密码
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+      // 创建新用户
+      const user = await User.create({
+        username,
+        password: hashedPassword,
+        email,
+        role: "user",
+        status: "active",
+      });
+
+      logger.info(`管理员 ${req.user.username} 创建了新用户: ${username}`);
+
+      // 返回用户信息（不包含密码）
       res.status(200).json({
         code: 200,
         msg: "用户添加成功",
-        data: user,
+        data: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
       });
     } catch (error) {
       logger.error(`添加用户失败: ${error.message}`);
@@ -320,23 +360,70 @@ class AdminController {
 
   static async updateUser(req, res, next) {
     try {
+      // 首先检查用户是否存在
       const existingUser = await User.findById(req.params.id);
       if (!existingUser) {
         return res.status(404).json({
           code: 404,
-          msg: "未找到该用户",
-          data: null,
+          msg: '未找到该用户',
+          data: null
         });
       }
 
-      const user = await User.update(req.params.id, req.body);
+      const { username, status, resetPassword } = req.body;
+      const updateData = {};
 
-      logger.info(`用户已更新: ${user.username}`);
+      // 如果提供了用户名，检查是否与其他用户重复
+      if (username && username !== existingUser.username) {
+        const userWithSameUsername = await User.findByUsername(username);
+        if (userWithSameUsername) {
+          return res.status(400).json({
+            code: 400,
+            msg: '用户名已存在',
+            data: null
+          });
+        }
+        updateData.username = username;
+      }
 
+      // 如果要重置密码
+      if (resetPassword === true) {
+        const saltRounds = 10;
+        const defaultPassword = '123456';
+        updateData.password = await bcrypt.hash(defaultPassword, saltRounds);
+        logger.info(`管理员 ${req.user.username} 重置了用户 ${existingUser.username} 的密码`);
+      }
+
+      // 更新状态
+      if (status) updateData.status = status;
+
+      // 如果没有任何要更新的字段
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({
+          code: 400,
+          msg: '没有提供任何要更新的字段',
+          data: null
+        });
+      }
+
+      // 执行更新
+      const updatedUser = await User.update(req.params.id, updateData);
+
+      logger.info(`用户已更新: ${updatedUser.username}`);
+
+      // 返回更新后的用户信息（不包含密码）
       res.json({
         code: 200,
-        msg: "用户更新成功",
-        data: user,
+        msg: '用户更新成功',
+        data: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          status: updatedUser.status,
+          createdAt: updatedUser.createdAt,
+          updatedAt: updatedUser.updatedAt
+        }
       });
     } catch (error) {
       logger.error(`更新用户失败: ${error.message}`);
