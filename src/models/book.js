@@ -11,6 +11,7 @@ class Book {
             isbn: book.isbn,
             quantity: book.quantity,
             loans: book.loans,
+            loansCount: book.loans_count,
             description: book.description,
             category: book.category,
             publisher: book.publisher,
@@ -33,6 +34,7 @@ class Book {
         if (bookData.isbn) converted.isbn = bookData.isbn;
         if (bookData.quantity) converted.quantity = bookData.quantity;
         if (bookData.loans) converted.loans = bookData.loans;
+        if (bookData.loansCount) converted.loans_count = bookData.loansCount;
         if (bookData.description) converted.description = bookData.description;
         if (bookData.category) converted.category = bookData.category;
         if (bookData.publisher) converted.publisher = bookData.publisher;
@@ -45,7 +47,7 @@ class Book {
         const snakeCaseData = this._convertToSnakeCase(bookData);
         
         const query = `
-            INSERT INTO books (title, author, isbn, quantity, loans, description, 
+            INSERT INTO books (title, author, isbn, quantity, loans, loans_count, description, 
                              category, publisher, publish_date)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *
@@ -56,6 +58,7 @@ class Book {
             bookData.isbn,
             bookData.quantity,
             0,  // initial loans
+            0,  // initial loans count.
             bookData.description,
             bookData.category,
             bookData.publisher,
@@ -174,7 +177,7 @@ class Book {
     static async updateLoans(id, increment = true) {
         const query = `
             UPDATE books 
-            SET loans = loans ${increment ? '+' : '-'} 1
+            SET loans = loans ${increment ? '+' : '-'} 1, loans_count = loans_count + 1
             WHERE id = $1 AND 
                   ${increment ? 'loans < quantity' : 'loans > 0'}
             RETURNING *
