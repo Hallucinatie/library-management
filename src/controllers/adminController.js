@@ -460,19 +460,25 @@ class AdminController {
     }
   }
 
-  // 借阅管理
-  static async deleteBorrowLog(req, res, next) {
-    try {
-      const borrowLog = await BorrowLog.delete(req.params.id);
-      if (!borrowLog) {
-        return res.status(404).json({ message: "未找到该借阅记录" });
-      }
-      logger.info(`借阅记录已删除: ID ${borrowLog.id}`);
-      res.json({ message: "借阅记录删除成功" });
-    } catch (error) {
-      next(error);
+    // 借阅管理
+    static async deleteBorrowLog(req, res, next) {
+        try {
+            const borrowLogId = req.params.id;
+            console.log(borrowLogId);
+            const borrowLog = await BorrowLog.delete(borrowLogId);
+            if (!borrowLog) {
+                return res.status(404).json({code: 404, message: "未找到该借阅记录"});
+            }
+            logger.info(`借阅记录已删除: ID ${borrowLog.id}`);
+            res.status(200).json({
+                code: 200,
+                message: "借阅记录删除成功" ,
+                data: borrowLog
+            });
+        } catch (error) {
+            next(error);
+        }
     }
-  }
 
   static async getBorrowLogs(req, res, next) {
     try {
