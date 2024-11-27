@@ -1,6 +1,7 @@
 const Book = require('../models/book');
 const Paper = require('../models/paper');
 const BorrowLog = require('../models/borrowLog');
+const DownloadLog = require('../models/downloadLog');
 const logger = require('../config/logger');
 
 class UserController {
@@ -27,6 +28,7 @@ class UserController {
 
     static async downloadPaper(req, res, next) {
         try {
+            
             const existingPaper = await Paper.findById(req.params.id);
             if (!existingPaper) {
                 return res.status(404).json({ 
@@ -35,9 +37,14 @@ class UserController {
                 });
             }
 
-            // 更新下载次数
+            // 更新下载次数 生成下载日志
             await Paper.incrementDownloadCount(existingPaper.id);
-            
+            const downloadLog = await DownloadLog.create({
+                userId: req.user.id,
+                paperId: existingPaper.id,
+                downloadDate: new Date()
+            });
+
             logger.info(`用户 ${req.user.username} 下载了论文: ${existingPaper.title}`);
             res.status(200).json({
                 code: 200,

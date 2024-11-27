@@ -2,6 +2,7 @@ const Book = require("../models/book");
 const Paper = require("../models/paper");
 const User = require("../models/user");
 const BorrowLog = require("../models/borrowLog");
+const DownloadLog = require("../models/downloadLog");
 const logger = require("../config/logger");
 const pool = require("../config/database").pool;
 const bcrypt = require("bcrypt");
@@ -559,7 +560,7 @@ class AdminController {
             logger.info(`借阅记录已删除: ID ${borrowLog.id}`);
             res.status(200).json({
                 code: 200,
-                message: "借阅记录删除成功" ,
+                msg: "借阅记录删除成功" ,
                 data: borrowLog
             });
         } catch (error) {
@@ -584,7 +585,7 @@ class AdminController {
             if (findBorrowLogs.length === 0) {
                 return res.status(404).json({
                     code: 404,
-                    messsage: "未找到符合条件的论文",
+                    messsage: "未找到符合条件的借阅记录",
                 });
             }
     
@@ -595,7 +596,53 @@ class AdminController {
                 total: findBorrowLogs.length,
             });
         } catch (error) {
-            logger.error(`查询论文失败: ${error.message}`);
+            logger.error(`查询借阅记录失败: ${error.message}`);
+            next(error);
+        }
+    }
+
+    // 下载管理
+    static async deleteDownloadLog(req, res, next) {
+        try {
+            const downloadLogId = req.params.id;
+            console.log(downloadLogId);
+            const downloadLog = await DownloadLog.delete(downloadLogId);
+            if (!downloadLog) {
+                return res.status(404).json({code: 404, message: "未找到该下载记录"});
+            }
+            logger.info(`下载记录已删除: ID ${downloadLog.id}`);
+            res.status(200).json({
+                code: 200,
+                msg: "下载记录删除成功" ,
+                data: downloadLog
+            });
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    static async getDownloadLogs(req, res, next) {
+        try {
+            const { id, userId, paperId, downloadDate } = req.query;
+
+            const queryParams = { id, userId, paperId, downloadDate };
+            const findDownloadLogs = await DownloadLog.findByQuery(queryParams);
+
+            if (findDownloadLogs.length === 0) {
+                return res.status(404).json({
+                    code: 404,
+                    messsage: "未找到符合条件的下载记录",
+                });
+            }
+    
+            res.json({
+                code: 200,
+                msg: "查询成功",
+                data: findDownloadLogs,
+                total: findDownloadLogs.length,
+            });
+        } catch (error) {
+            logger.error(`查询下载记录失败: ${error.message}`);
             next(error);
         }
       }
