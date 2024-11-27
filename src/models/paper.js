@@ -190,6 +190,12 @@ class Paper {
             paramCount++;
         }
 
+        if (queryParams.userId) {
+            query += ` AND user_id = $${paramCount}`;
+            values.push(`%${queryParams.userId}%`);
+            paramCount++;
+        }
+
         query += ' ORDER BY created_at ASC';
 
         const { rows } = await pool.query(query, values);

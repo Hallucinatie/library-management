@@ -35,6 +35,7 @@ class User {
     // 创建新用户
     static async create(userData) {
         const snakeCaseData = this._convertToSnakeCase(userData);
+        
         const query = `
             INSERT INTO users (username, password, email, role, status)
             VALUES ($1, $2, $3, $4, $5)
