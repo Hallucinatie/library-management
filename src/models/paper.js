@@ -164,6 +164,8 @@ class Paper {
     const values = [];
     let paramCount = 1;
 
+    console.log(queryParams)
+
     // 精确匹配ID
     if (queryParams.id) {
       query += ` AND id = $${paramCount}`;
@@ -187,7 +189,7 @@ class Paper {
     });
 
     if (queryParams.userId) {
-        query += ` AND (user_id = $${paramCount} OR is_public = 1)`;
+        query += ` AND (user_id = $${paramCount} OR is_public = true)`;
         values.push(`%${queryParams.userId}%`);
         paramCount++;
     }
