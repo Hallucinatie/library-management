@@ -40,6 +40,10 @@ router.get('/users', AdminController.getUsers);
 router.delete('/borrow-logs/:id', idParamValidation(), validate, AdminController.deleteBorrowLog);
 router.get('/borrow-logs', AdminController.getBorrowLogs);
 
+// 下载管理路由
+router.delete('/download-logs/:id', idParamValidation(), validate, AdminController.deleteDownloadLog);
+router.get('/download-logs', AdminController.getDownloadLogs);
+
 // 统计信息路由
 router.get('/statistics', AdminController.getStatistics);
 
