@@ -1,565 +1,542 @@
-const Book = require('../models/book');
-const Paper = require('../models/paper');
-const User = require('../models/user');
-const BorrowLog = require('../models/borrowLog');
-const logger = require('../config/logger');
-const pool = require('../config/database').pool;
-const bcrypt = require('bcrypt');
+const Book = require("../models/book");
+const Paper = require("../models/paper");
+const User = require("../models/user");
+const BorrowLog = require("../models/borrowLog");
+const logger = require("../config/logger");
+const pool = require("../config/database").pool;
+const bcrypt = require("bcrypt");
 
 class AdminController {
-    // 书籍管理
-    static async addBook(req, res, next) {
-        try {
-            const bookData = {
-                ...req.body,
-                userId: req.user.id  // 这里自动绑定当前登录用户的ID
-            };
+  // 书籍管理
+  static async addBook(req, res, next) {
+    try {
+      const bookData = {
+        ...req.body,
+        userId: req.user.id, // 这里自动绑定当前登录用户的ID
+      };
 
-            const book = await Book.create(bookData);
-            logger.info(`新书籍已添加: ${book.title}`);
-            res.status(200).json({
-                code: 200,
-                msg: '书籍添加成功',
-                data: book
-            });
-        } catch (error) {
-            logger.error(`添加书籍失败: ${error.message}`);
-            next(error);
-        }
+      const book = await Book.create(bookData);
+      logger.info(`新书籍已添加: ${book.title}`);
+      res.status(200).json({
+        code: 200,
+        msg: "书籍添加成功",
+        data: book,
+      });
+    } catch (error) {
+      logger.error(`添加书籍失败: ${error.message}`);
+      next(error);
     }
+  }
 
-    static async updateBook(req, res, next) {
-        try {
-            const existingBook = await Book.findById(req.params.id);
-            if (!existingBook) {
-                return res.status(404).json({
-                    code: 404,
-                    msg: '未找到该书籍',
-                    data: null
-                });
-            }
+  static async updateBook(req, res, next) {
+    try {
+      const existingBook = await Book.findById(req.params.id);
+      if (!existingBook) {
+        return res.status(404).json({
+          code: 404,
+          msg: "未找到该书籍",
+          data: null,
+        });
+      }
 
-            const book = await Book.update(req.params.id, req.body);
-            
-            logger.info(`书籍已更新: ${book.title}`);
-            res.json({
-                code: 200,
-                msg: '书籍更新成功',
-                data: book
-            });
-        } catch (error) {
-            next(error);
-        }
+      const book = await Book.update(req.params.id, req.body);
+
+      logger.info(`书籍已更新: ${book.title}`);
+      res.json({
+        code: 200,
+        msg: "书籍更新成功",
+        data: book,
+      });
+    } catch (error) {
+      next(error);
     }
+  }
 
-    static async deleteBook(req, res, next) {
-        try {
-            const existingBook = await Book.findById(req.params.id);
-            if (!existingBook) {
-                return res.status(404).json({
-                    code: 404,
-                    msg: '未找到该书籍',
-                    data: null
-                });
-            }
+  static async deleteBook(req, res, next) {
+    try {
+      const existingBook = await Book.findById(req.params.id);
+      if (!existingBook) {
+        return res.status(404).json({
+          code: 404,
+          msg: "未找到该书籍",
+          data: null,
+        });
+      }
 
-            const book = await Book.delete(req.params.id);
-            
-            logger.info(`书籍已删除: ${book.title}, ID: ${book.id}, 删除者: ${req.user.username}`);
-            res.json({ 
-                code:200,
-                msg: '书籍删除成功',
-                data:{
-                    id:book.id,
-                    title:book.title
-                }
-            });
-        } catch (error) {
-            logger.error(`删除书籍失败: ${error.message}`);
-            next(error);
-        }
+      const book = await Book.delete(req.params.id);
+
+      logger.info(
+        `书籍已删除: ${book.title}, ID: ${book.id}, 删除者: ${req.user.username}`
+      );
+      res.json({
+        code: 200,
+        msg: "书籍删除成功",
+        data: {
+          id: book.id,
+          title: book.title,
+        },
+      });
+    } catch (error) {
+      logger.error(`删除书籍失败: ${error.message}`);
+      next(error);
     }
+  }
 
-    static async getBooks(req, res, next) {
-        try {
-            const {id,title,author,isbn,category}=req.query;
-            
-            if(id){
-                const book=await Book.findById(id);
-                if(!book){
-                    return res.status(404).json({
-                        code:404,
-                        msg:'未找到指定ID的书籍',
-                        data: null
-                    });
-                }
+  static async getBooks(req, res, next) {
+    try {
+      const { id, title, author, isbn, category } = req.query;
 
-                // 如果同时指定了其他条件，验证是否匹配
-                if (title && !book.title.toLowerCase().includes(title.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的书籍',
-                        data: null
-                    });
-                }
-                if (author && !book.author.toLowerCase().includes(author.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的书籍',
-                        data: null
-                    });
-                }
-                if (isbn && !book.isbn.toLowerCase().includes(isbn.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的书籍',
-                        data: null
-                    });
-                }
-                if (category && !book.category.toLowerCase().includes(category.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的书籍',
-                        data: null
-                    });
-                }
-
-                return res.json({
-                    code: 200,
-                    msg: '查询成功',
-                    data: [book],
-                    total: 1
-                });
-            }
-
-            // 如果没有指定 ID，则按其他条件查询
-            const queryParams = {};
-            if (title) queryParams.title = title;
-            if (author) queryParams.author = author;
-            if(isbn) queryParams.isbn=isbn;
-            if (category) queryParams.category = category;
-
-            const books = await Book.findByQuery(queryParams);
-
-            res.json({
-                code: 200,
-                msg: '查询成功',
-                data: books,
-                total: books.length
-            });
-        } catch (error) {
-            logger.error(`查询书籍失败: ${error.message}`);
-            next(error);
-
-
+      if (id) {
+        const book = await Book.findById(id);
+        if (!book) {
+          return res.status(404).json({
+            code: 404,
+            msg: "未找到指定ID的书籍",
+            data: null,
+          });
         }
-    }
 
-    // 论文管理
-    static async addPaper(req, res, next) {
-        try {
-            const paperData = {
-                ...req.body,
-                userId: req.user.id  // 这里自动绑定当前登录用户的ID
-            };
-
-            const paper = await Paper.create(paperData);
-            logger.info(`新论文已添加: ${paper.title}`);
-            res.status(200).json({
-                code: 200,
-                msg: '论文添加成功',
-                data: paper
-            });
-        } catch (error) {
-            logger.error(`添加论文失败: ${error.message}`);
-            next(error);
+        // 模糊匹配
+        if (title && !book.title.toLowerCase().includes(title.toLowerCase())) {
+          return res.status(404).json({
+            code: 404,
+            msg: "未找到符合所有条件的书籍",
+            data: null,
+          });
         }
-    }
-
-    static async updatePaper(req, res, next) {
-        try {
-            // 首先检查论文是否存在
-            const existingPaper = await Paper.findById(req.params.id);
-            if (!existingPaper) {
-                return res.status(404).json({
-                    code: 404,
-                    msg: '未找到该论文',
-                    data: null
-                });
-            }
-            // logger.info(`existingPaper.userId: ${existingPaper.userid}, req.user.id: ${req.user.id}`);
-
-            // 检查是否有权限修改（只能修改自己创建的论文）
-            // PostgreSQL 返回的列名是小写的
-            if (existingPaper.userId !== req.user.id) {
-                return res.status(403).json({
-                    code: 403,
-                    msg: '没有权限修改此论文',
-                    data: null
-                });
-            }
-
-            const paper = await Paper.update(req.params.id, req.body);
-
-            logger.info(`论文已更新: ${paper.title}`);
-
-            res.json({
-                code: 200,
-                msg: '论文更新成功',
-                data: paper
-            });
-        } catch (error) {
-            logger.error(`更新论文失败: ${error.message}`);
-
-            if (error.message === '论文文件已存在') {
-                return res.status(400).json({
-                    code: 400,
-                    msg: error.message,
-                    data: null
-                });
-            }
-
-            next(error);
+        if (
+          author &&
+          !book.author.toLowerCase().includes(author.toLowerCase())
+        ) {
+          return res.status(404).json({
+            code: 404,
+            msg: "未找到符合所有条件的书籍",
+            data: null,
+          });
         }
-    }
-
-    static async deletePaper(req, res, next) {
-        try {
-            // 首先检查论文是否存在
-            const existingPaper = await Paper.findById(req.params.id);
-            if (!existingPaper) {
-                return res.status(404).json({
-                    code: 404,
-                    msg: '未找到该论文',
-                    data: null
-                });
-            }
-
-            // 检查是否有权限删除（只能删除自己创建的论文）
-            if (existingPaper.userId !== req.user.id) {
-                return res.status(403).json({
-                    code: 403,
-                    msg: '没有权限删除此论文',
-                    data: null
-                });
-            }
-
-            // 执行删除操作
-            const paper = await Paper.delete(req.params.id);
-
-            logger.info(`论文已删除: ${paper.title}, ID: ${paper.id}, 删除者: ${req.user.username}`);
-
-            res.json({
-                code: 200,
-                msg: '论文删除成功',
-                data: {
-                    id: paper.id,
-                    title: paper.title
-                }
-            });
-        } catch (error) {
-            logger.error(`删除论文失败: ${error.message}`);
-            next(error);
+        if (isbn && !book.isbn.toLowerCase().includes(isbn.toLowerCase())) {
+          return res.status(404).json({
+            code: 404,
+            msg: "未找到符合所有条件的书籍",
+            data: null,
+          });
         }
-    }
-
-    static async getPapers(req, res, next) {
-        try {
-            const { id, title, author, category } = req.query;
-
-            // 如果指定了 ID，优先按 ID 查询
-            if (id) {
-                const paper = await Paper.findById(id);
-                if (!paper) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到指定ID的论文',
-                        data: null
-                    });
-                }
-
-                // 如果同时指定了其他条件，验证是否匹配
-                if (title && !paper.title.toLowerCase().includes(title.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的论文',
-                        data: null
-                    });
-                }
-                if (author && !paper.author.toLowerCase().includes(author.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的论文',
-                        data: null
-                    });
-                }
-                if (category && !paper.category.toLowerCase().includes(category.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的论文',
-                        data: null
-                    });
-                }
-
-                return res.json({
-                    code: 200,
-                    msg: '查询成功',
-                    data: [paper],
-                    total: 1
-                });
-            }
-
-            // 如果没有指定 ID，则按其他条件查询
-            const queryParams = {};
-            if (title) queryParams.title = title;
-            if (author) queryParams.author = author;
-            if (category) queryParams.category = category;
-
-            const papers = await Paper.findByQuery(queryParams);
-
-            res.json({
-                code: 200,
-                msg: '查询成功',
-                data: papers,
-                total: papers.length
-            });
-        } catch (error) {
-            logger.error(`查询论文失败: ${error.message}`);
-            next(error);
+        if (
+          category &&
+          !book.category.toLowerCase().includes(category.toLowerCase())
+        ) {
+          return res.status(404).json({
+            code: 404,
+            msg: "未找到符合所有条件的书籍",
+            data: null,
+          });
         }
+
+        return res.json({
+          code: 200,
+          msg: "查询成功",
+          data: [book],
+          total: 1,
+        });
+      }
+
+      // 如果没有指定 ID，则按其他条件查询
+      const queryParams = {};
+      if (title) queryParams.title = title;
+      if (author) queryParams.author = author;
+      if (isbn) queryParams.isbn = isbn;
+      if (category) queryParams.category = category;
+
+      const books = await Book.findByQuery(queryParams);
+
+      res.json({
+        code: 200,
+        msg: "查询成功",
+        data: books,
+        total: books.length,
+      });
+    } catch (error) {
+      logger.error(`查询书籍失败: ${error.message}`);
+      next(error);
     }
+  }
 
-    // 用户管理
-    static async addUser(req, res, next) {
-        try {
-            const UserData = {
-                ...req.body,
-                userId: req.user.id  
-            };
+  // 论文管理
+  static async addPaper(req, res, next) {
+    try {
+      const paperData = {
+        ...req.body,
+        userId: req.user.id, // 这里自动绑定当前登录用户的ID
+      };
 
-            const user = await User.create(req.body);
-            logger.info(`新用户已添加: ${user.username}`);
-            res.status(200).json({
-                code: 200,
-                msg: '用户添加成功',
-                data: user
-            });
-        } catch (error) {
-            logger.error(`添加用户失败: ${error.message}`);
-            next(error);
+      const paper = await Paper.create(paperData);
+      logger.info(`新论文已添加: ${paper.title}`);
+      res.status(200).json({
+        code: 200,
+        msg: "论文添加成功",
+        data: paper,
+      });
+    } catch (error) {
+      logger.error(`添加论文失败: ${error.message}`);
+      next(error);
+    }
+  }
+
+  static async updatePaper(req, res, next) {
+    try {
+      // 首先检查论文是否存在
+      const existingPaper = await Paper.findById(req.params.id);
+      if (!existingPaper) {
+        return res.status(404).json({
+          code: 404,
+          msg: "未找到该论文",
+          data: null,
+        });
+      }
+      // logger.info(`existingPaper.userId: ${existingPaper.userid}, req.user.id: ${req.user.id}`);
+
+      // 检查是否有权限修改（只能修改自己创建的论文）
+      // PostgreSQL 返回的列名是小写的
+      if (existingPaper.userId !== req.user.id) {
+        return res.status(403).json({
+          code: 403,
+          msg: "没有权限修改此论文",
+          data: null,
+        });
+      }
+
+      const paper = await Paper.update(req.params.id, req.body);
+
+      logger.info(`论文已更新: ${paper.title}`);
+
+      res.json({
+        code: 200,
+        msg: "论文更新成功",
+        data: paper,
+      });
+    } catch (error) {
+      logger.error(`更新论文失败: ${error.message}`);
+
+      if (error.message === "论文文件已存在") {
+        return res.status(400).json({
+          code: 400,
+          msg: error.message,
+          data: null,
+        });
+      }
+
+      next(error);
+    }
+  }
+
+  static async deletePaper(req, res, next) {
+    try {
+      // 首先检查论文是否存在
+      const existingPaper = await Paper.findById(req.params.id);
+      if (!existingPaper) {
+        return res.status(404).json({
+          code: 404,
+          msg: "未找到该论文",
+          data: null,
+        });
+      }
+
+      // 检查是否有权限删除（只能删除自己创建的论文）
+      if (existingPaper.userId !== req.user.id) {
+        return res.status(403).json({
+          code: 403,
+          msg: "没有权限删除此论文",
+          data: null,
+        });
+      }
+
+      // 执行删除操作
+      const paper = await Paper.delete(req.params.id);
+
+      logger.info(
+        `论文已删除: ${paper.title}, ID: ${paper.id}, 删除者: ${req.user.username}`
+      );
+
+      res.json({
+        code: 200,
+        msg: "论文删除成功",
+        data: {
+          id: paper.id,
+          title: paper.title,
+        },
+      });
+    } catch (error) {
+      logger.error(`删除论文失败: ${error.message}`);
+      next(error);
+    }
+  }
+
+  static async getPapers(req, res, next) {
+    try {
+      const { id, title, author, category } = req.query;
+      const queryParams = { id, title, author, category };
+
+      const papers = await Paper.findByQuery(queryParams);
+
+      if (papers.length === 0) {
+        return res.status(404).json({
+          code: 404,
+          msg: '未找到符合条件的论文',
+          data: null
+        });
+      }
+
+      res.json({
+        code: 200,
+        msg: '查询成功',
+        data: papers,
+        total: papers.length
+      });
+    } catch (error) {
+      logger.error(`查询论文失败: ${error.message}`);
+      next(error);
+    }
+  }
+
+  // 用户管理
+  static async addUser(req, res, next) {
+    try {
+      const UserData = {
+        ...req.body,
+        userId: req.user.id,
+      };
+
+      const user = await User.create(req.body);
+      logger.info(`新用户已添加: ${user.username}`);
+      res.status(200).json({
+        code: 200,
+        msg: "用户添加成功",
+        data: user,
+      });
+    } catch (error) {
+      logger.error(`添加用户失败: ${error.message}`);
+      next(error);
+    }
+  }
+
+  static async updateUser(req, res, next) {
+    try {
+      const existingUser = await User.findById(req.params.id);
+      if (!existingUser) {
+        return res.status(404).json({
+          code: 404,
+          msg: "未找到该用户",
+          data: null,
+        });
+      }
+
+      const user = await User.update(req.params.id, req.body);
+
+      logger.info(`用户已更新: ${user.username}`);
+
+      res.json({
+        code: 200,
+        msg: "用户更新成功",
+        data: user,
+      });
+    } catch (error) {
+      logger.error(`更新用户失败: ${error.message}`);
+      next(error);
+    }
+  }
+
+  static async deleteUser(req, res, next) {
+    try {
+      const existingUser = await User.findById(req.params.id);
+      if (!existingUser) {
+        return res.status(404).json({
+          code: 404,
+          msg: "未找到该用户",
+          data: null,
+        });
+      }
+
+      const user = await User.delete(req.params.id);
+
+      logger.info(`用户已删除: ${user.username}`);
+
+      res.json({
+        code: 200,
+        msg: "用户删除成功",
+        data: {
+          id: user.id,
+          username: user.username,
+        },
+      });
+    } catch (error) {
+      logger.error(`删除用户失败: ${error.message}`);
+      next(error);
+    }
+  }
+
+  static async getUsers(req, res, next) {
+    try {
+      const { id, username, email, role, status } = req.query;
+
+      if (id) {
+        const user = await User.findById(id);
+        if (!user) {
+          return res.status(404).json({
+            code: 404,
+            msg: "未找到指定ID的用户",
+            data: null,
+          });
         }
-    }
 
-    static async updateUser(req, res, next) {
-        try {
-            const existingUser = await User.findById(req.params.id);
-            if (!existingUser) {
-                return res.status(404).json({
-                    code: 404,
-                    msg: '未找到该用户',
-                    data: null
-                });
-            }
-            
-            const user = await User.update(req.params.id, req.body);
-            
-            logger.info(`用户已更新: ${user.username}`);
-
-            res.json({
-                code:200,
-                msg:"用户更新成功",
-                data: user
-            });
-        } catch (error) {
-            logger.error(`更新用户失败: ${error.message}`);
-            next(error);
+        // 如果同时指定了其他条件，验证是否匹配
+        if (
+          username &&
+          !user.username.toLowerCase().includes(username.toLowerCase())
+        ) {
+          return res.status(404).json({
+            code: 404,
+            msg: "未找到符合所有条件的用户",
+            data: null,
+          });
         }
-    }
-
-    static async deleteUser(req, res, next) {
-        try {
-            const existingUser = await User.findById(req.params.id);
-            if (!existingUser) {
-                return res.status(404).json({
-                    code: 404,
-                    msg: '未找到该用户',
-                    data: null
-                });
-            }
-
-            const user = await User.delete(req.params.id);
-            
-            logger.info(`用户已删除: ${user.username}`);
-            
-            res.json({
-                code:200,
-                msg:"用户删除成功",
-                data: {
-                    id:user.id,
-                    username:user.username
-                }
-            });
-        } catch (error) {
-            logger.error(`删除用户失败: ${error.message}`);
-            next(error);
+        if (email && !user.email.toLowerCase().includes(email.toLowerCase())) {
+          return res.status(404).json({
+            code: 404,
+            msg: "未找到符合所有条件的用户",
+            data: null,
+          });
         }
-    }
-
-    static async getUsers(req, res, next) {
-        try {
-            const {id,username,email,role,status}=req.query;
-            
-            if (id) {
-                const user = await User.findById(id);
-                if (!user) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到指定ID的用户',
-                        data: null
-                    });
-                }
-
-                // 如果同时指定了其他条件，验证是否匹配
-                if (username && !user.username.toLowerCase().includes(username.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的用户',
-                        data: null
-                    });
-                }
-                if (email && !user.email.toLowerCase().includes(email.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的用户',
-                        data: null
-                    });
-                }
-                if (role && !user.role.toLowerCase().includes(role.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的用户',
-                        data: null
-                    });
-                }
-                if (status && !user.status.toLowerCase().includes(status.toLowerCase())) {
-                    return res.status(404).json({
-                        code: 404,
-                        msg: '未找到符合所有条件的用户',
-                        data: null
-                    });
-                }
-
-                return res.json({
-                    code: 200,
-                    msg: '查询成功',
-                    data: [user],
-                    total: 1
-                });
-            }
-
-            const queryParams = {};
-            if (id) queryParams.id=id;
-            if (username) queryParams.username = username;
-            if (email) queryParams.email = email;
-            if (role) queryParams.role = role;
-            if (status) queryParams.status =status;
-
-            const users = await User.findByQuery(queryParams);
-            
-            if(users.length==0){
-                return res.json({
-                        code: 404,
-                        msg: '未找到符合所有条件的用户',
-                        data: null
-                });
-            }
-
-            res.json({
-                code: 200,
-                msg: '查询成功',
-                data: users,
-                total: users.length
-            });
-        } catch (error) {
-            logger.error(`查询用户失败: ${error.message}`);
-            next(error);
+        if (role && !user.role.toLowerCase().includes(role.toLowerCase())) {
+          return res.status(404).json({
+            code: 404,
+            msg: "未找到符合所有条件的用户",
+            data: null,
+          });
         }
-    }
-
-    // 借阅管理
-    static async deleteBorrowLog(req, res, next) {
-        try {
-            const borrowLog = await BorrowLog.delete(req.params.id);
-            if (!borrowLog) {
-                return res.status(404).json({ message: '未找到该借阅记录' });
-            }
-            logger.info(`借阅记录已删除: ID ${borrowLog.id}`);
-            res.json({ message: '借阅记录删除成功' });
-        } catch (error) {
-            next(error);
+        if (
+          status &&
+          !user.status.toLowerCase().includes(status.toLowerCase())
+        ) {
+          return res.status(404).json({
+            code: 404,
+            msg: "未找到符合所有条件的用户",
+            data: null,
+          });
         }
+
+        return res.json({
+          code: 200,
+          msg: "查询成功",
+          data: [user],
+          total: 1,
+        });
+      }
+
+      const queryParams = {};
+      if (id) queryParams.id = id;
+      if (username) queryParams.username = username;
+      if (email) queryParams.email = email;
+      if (role) queryParams.role = role;
+      if (status) queryParams.status = status;
+
+      const users = await User.findByQuery(queryParams);
+
+      if (users.length == 0) {
+        return res.json({
+          code: 404,
+          msg: "未找到符合所有条件的用户",
+          data: null,
+        });
+      }
+
+      res.json({
+        code: 200,
+        msg: "查询成功",
+        data: users,
+        total: users.length,
+      });
+    } catch (error) {
+      logger.error(`查询用户失败: ${error.message}`);
+      next(error);
     }
+  }
 
-    static async getBorrowLogs(req, res, next) {
-        try {
-            const borrowLogs = await BorrowLog.findAll();
-            res.json(borrowLogs);
-        } catch (error) {
-            next(error);
-        }
+  // 借阅管理
+  static async deleteBorrowLog(req, res, next) {
+    try {
+      const borrowLog = await BorrowLog.delete(req.params.id);
+      if (!borrowLog) {
+        return res.status(404).json({ message: "未找到该借阅记录" });
+      }
+      logger.info(`借阅记录已删除: ID ${borrowLog.id}`);
+      res.json({ message: "借阅记录删除成功" });
+    } catch (error) {
+      next(error);
     }
+  }
 
-    static async getBorrowLogById(req, res, next) {
-        try {
-            const borrowLog = await BorrowLog.findById(req.params.id);
-            if (!borrowLog) {
-                return res.status(404).json({ message: '未找到该借阅记录' });
-            }
-            res.json(borrowLog);
-        } catch (error) {
-            next(error);
-        }
+  static async getBorrowLogs(req, res, next) {
+    try {
+      const borrowLogs = await BorrowLog.findAll();
+      res.json(borrowLogs);
+    } catch (error) {
+      next(error);
     }
+  }
 
-    static async getBorrowLogsByUserId(req, res, next) {
-        try {
-            const userExists = await User.findById(req.params.userId);
-            if (!userExists) {
-                return res.status(404).json({ message: '用户不存在' });
-            }
-
-            const borrowLogs = await BorrowLog.findByUserId(req.params.userId);
-            if (borrowLogs.length === 0) {
-                return res.status(404).json({ message: '未找到该用户的借阅记录' });
-            }
-            res.json(borrowLogs);
-        } catch (error) {
-            next(error);
-        }
+  static async getBorrowLogById(req, res, next) {
+    try {
+      const borrowLog = await BorrowLog.findById(req.params.id);
+      if (!borrowLog) {
+        return res.status(404).json({ message: "未找到该借阅记录" });
+      }
+      res.json(borrowLog);
+    } catch (error) {
+      next(error);
     }
+  }
 
-    static async getBorrowLogsByBookId(req, res, next) {
-        try {
-            const bookExists = await Book.findById(req.params.bookId);
-            if (!bookExists) {
-                return res.status(404).json({ message: '书籍不存在' });
-            }
+  static async getBorrowLogsByUserId(req, res, next) {
+    try {
+      const userExists = await User.findById(req.params.userId);
+      if (!userExists) {
+        return res.status(404).json({ message: "用户不存在" });
+      }
 
-            const borrowLogs = await BorrowLog.findByBookId(req.params.bookId);
-            if (borrowLogs.length === 0) {
-                return res.status(404).json({ message: '未找到与此书籍相关的借阅记录' });
-            }
-            res.json(borrowLogs);
-        } catch (error) {
-            next(error);
-        }
+      const borrowLogs = await BorrowLog.findByUserId(req.params.userId);
+      if (borrowLogs.length === 0) {
+        return res.status(404).json({ message: "未找到该用户的借阅记录" });
+      }
+      res.json(borrowLogs);
+    } catch (error) {
+      next(error);
     }
+  }
 
-    // 统计信息
-    static async getStatistics(req, res, next) {
-        try {
-            // 获取借阅统计
-            const borrowStats = await pool.query(`
+  static async getBorrowLogsByBookId(req, res, next) {
+    try {
+      const bookExists = await Book.findById(req.params.bookId);
+      if (!bookExists) {
+        return res.status(404).json({ message: "书籍不存在" });
+      }
+
+      const borrowLogs = await BorrowLog.findByBookId(req.params.bookId);
+      if (borrowLogs.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "未找到与此书籍相关的借阅记录" });
+      }
+      res.json(borrowLogs);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // 统计信息
+  static async getStatistics(req, res, next) {
+    try {
+      // 获取借阅统计
+      const borrowStats = await pool.query(`
                 SELECT 
                     COUNT(*) as totalBorrows,
                     COUNT(DISTINCT userId) as uniqueUsers,
@@ -567,84 +544,86 @@ class AdminController {
                 FROM borrowLogs
             `);
 
-            // 获取资源统计
-            const resourceStats = await pool.query(`
+      // 获取资源统计
+      const resourceStats = await pool.query(`
                 SELECT 
                     (SELECT COUNT(*) FROM books) as totalBooks,
                     (SELECT COUNT(*) FROM papers) as totalPapers
             `);
 
-            res.json({
-                borrowing: {
-                    totalBorrows: parseInt(borrowStats.rows[0].totalborrows),
-                    uniqueUsers: parseInt(borrowStats.rows[0].uniqueusers),
-                    activeBorrows: parseInt(borrowStats.rows[0].activeborrows)
-                },
-                resources: {
-                    totalBooks: parseInt(resourceStats.rows[0].totalbooks),
-                    totalPapers: parseInt(resourceStats.rows[0].totalpapers)
-                }
-            });
-        } catch (error) {
-            next(error);
-        }
+      res.json({
+        borrowing: {
+          totalBorrows: parseInt(borrowStats.rows[0].totalborrows),
+          uniqueUsers: parseInt(borrowStats.rows[0].uniqueusers),
+          activeBorrows: parseInt(borrowStats.rows[0].activeborrows),
+        },
+        resources: {
+          totalBooks: parseInt(resourceStats.rows[0].totalbooks),
+          totalPapers: parseInt(resourceStats.rows[0].totalpapers),
+        },
+      });
+    } catch (error) {
+      next(error);
     }
+  }
 
-    static async registerAdmin(req, res, next) {
-        try {
-            const { username, password, email } = req.body;
+  static async registerAdmin(req, res, next) {
+    try {
+      const { username, password, email } = req.body;
 
-            // 检查用户名是否已存在
-            const existingUser = await User.findByUsername(username);
-            if (existingUser) {
-                return res.status(400).json({
-                    code: 400,
-                    msg: '用户名已存在',
-                    data: null
-                });
-            }
+      // 检查用户名是否已存在
+      const existingUser = await User.findByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({
+          code: 400,
+          msg: "用户名已存在",
+          data: null,
+        });
+      }
 
-            // 检查邮箱是否已存在
-            const existingEmail = await User.findByEmail(email);
-            if (existingEmail) {
-                return res.status(400).json({
-                    code: 400,
-                    msg: '邮箱已被使用',
-                    data: null
-                });
-            }
+      // 检查邮箱是否已存在
+      const existingEmail = await User.findByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({
+          code: 400,
+          msg: "邮箱已被使用",
+          data: null,
+        });
+      }
 
-            // 加密密码
-            const saltRounds = 10;
-            const hashedPassword = await bcrypt.hash(password, saltRounds);
+      // 加密密码
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-            // 创建新管理员用户
-            const newAdmin = await User.create({
-                username,
-                password: hashedPassword,
-                email,
-                role: 'admin',
-                status: 'active'
-            });
+      // 创建新管理员用户
+      const newAdmin = await User.create({
+        username,
+        password: hashedPassword,
+        email,
+        role: "admin",
+        status: "active",
+      });
 
-            logger.info(`管理员 ${req.user.username} 创建了新管理员账号: ${username}`);
+      logger.info(
+        `管理员 ${req.user.username} 创建了新管理员账号: ${username}`
+      );
 
-            // 返回创建的管理员信息（不包含密码）
-            res.status(200).json({
-                code: 200,
-                msg: '管理员账号创建成功',
-                data: {
-                    id: newAdmin.id,
-                    username: newAdmin.username,
-                    email: newAdmin.email,
-                    role: newAdmin.role,
-                    status: newAdmin.status
-                }
-            });
-        } catch (error) {
-            next(error);
-        }
+      // 返回创建的管理员信息（不包含密码）
+      res.status(200).json({
+        code: 200,
+        msg: "管理员账号创建成功",
+        data: {
+          id: newAdmin.id,
+          username: newAdmin.username,
+          email: newAdmin.email,
+          role: newAdmin.role,
+          status: newAdmin.status,
+        },
+      });
+    } catch (error) {
+      next(error);
     }
+  }
 }
 
-module.exports = AdminController; 
+module.exports = AdminController;

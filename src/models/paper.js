@@ -166,37 +166,29 @@ class Paper {
         const values = [];
         let paramCount = 1;
 
+        // 精确匹配ID
         if (queryParams.id) {
             query += ` AND id = $${paramCount}`;
             values.push(queryParams.id);
             paramCount++;
         }
 
-        if (queryParams.title) {
-            query += ` AND title ILIKE $${paramCount}`;
-            values.push(`%${queryParams.title}%`);
-            paramCount++;
-        }
+        // 模糊匹配其他字段
+        const likeFields = {
+            title: 'title',
+            author: 'author',
+            category: 'category'
+        };
 
-        if (queryParams.author) {
-            query += ` AND author ILIKE $${paramCount}`;
-            values.push(`%${queryParams.author}%`);
-            paramCount++;
-        }
+        Object.entries(likeFields).forEach(([param, field]) => {
+            if (queryParams[param]) {
+                query += ` AND ${field} ILIKE $${paramCount}`;
+                values.push(`%${queryParams[param]}%`);
+                paramCount++;
+            }
+        });
 
-        if (queryParams.category) {
-            query += ` AND category ILIKE $${paramCount}`;
-            values.push(`%${queryParams.category}%`);
-            paramCount++;
-        }
-
-        if (queryParams.userId) {
-            query += ` AND (user_id = $${paramCount} OR is_public = 1)`;
-            values.push(`%${queryParams.userId}%`);
-            paramCount++;
-        }
-
-        query += ' ORDER BY created_at ASC';
+        query += ' ORDER BY created_at DESC';
 
         const { rows } = await pool.query(query, values);
         return rows.map(row => this._convertToCamelCase(row));
