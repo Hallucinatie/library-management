@@ -603,6 +603,7 @@ class AdminController {
   // 统计信息
   static async getStatistics(req, res, next) {
     try {
+        // So I guess it's the begining of the end, or the end of the begining?
       // 获取借阅统计
       const borrowStats = await pool.query(`
                 SELECT 
