@@ -139,6 +139,12 @@ class User {
         return this._convertToCamelCase(rows[0]);
     }
 
+    static async findByStatus(status) {
+        const query = 'SELECT * FROM users WHERE status = $1';
+        const { rows } = await pool.query(query, [status]);
+        return this._convertToCamelCase(rows[0]);
+    }
+
     static async findByQuery(queryParams = {}) {
         let query = 'SELECT * FROM users WHERE 1=1';
         const values = [];
@@ -159,6 +165,18 @@ class User {
         if (queryParams.email) {
             query += ` AND email ILIKE $${paramCount}`;
             values.push(`%${queryParams.email}%`);
+            paramCount++;
+        }
+
+        if (queryParams.role) {
+            query += ` AND role ILIKE $${paramCount}`;
+            values.push(`%${queryParams.role}%`);
+            paramCount++;
+        }
+
+        if (queryParams.status) {
+            query += ` AND status ILIKE $${paramCount}`;
+            values.push(`%${queryParams.status}%`);
             paramCount++;
         }
 

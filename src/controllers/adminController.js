@@ -407,7 +407,7 @@ class AdminController {
 
     static async getUsers(req, res, next) {
         try {
-            const {id,username,email}=req.query;
+            const {id,username,email,role,status}=req.query;
             
             if (id) {
                 const user = await User.findById(id);
@@ -434,6 +434,20 @@ class AdminController {
                         data: null
                     });
                 }
+                if (role && !user.role.toLowerCase().includes(role.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的用户',
+                        data: null
+                    });
+                }
+                if (status && !user.status.toLowerCase().includes(status.toLowerCase())) {
+                    return res.status(404).json({
+                        code: 404,
+                        msg: '未找到符合所有条件的用户',
+                        data: null
+                    });
+                }
 
                 return res.json({
                     code: 200,
@@ -444,10 +458,21 @@ class AdminController {
             }
 
             const queryParams = {};
+            if (id) queryParams.id=id;
             if (username) queryParams.username = username;
             if (email) queryParams.email = email;
+            if (role) queryParams.role = role;
+            if (status) queryParams.status =status;
 
             const users = await User.findByQuery(queryParams);
+            
+            if(users.length==0){
+                return res.json({
+                        code: 404,
+                        msg: '未找到符合所有条件的用户',
+                        data: null
+                });
+            }
 
             res.json({
                 code: 200,
