@@ -90,85 +90,49 @@ class BorrowLog {
     }
 
     // 根据ID获取借阅记录
-    static async findById(id) {
-        const query = `
-            SELECT bl.*, u.username, b.title as book_title
-            FROM borrow_logs bl
-            JOIN users u ON bl.user_id = u.id
-            JOIN books b ON bl.book_id = b.id
-            WHERE bl.id = $1
-        `;
-        const { rows } = await pool.query(query, [id]);
-        return this._convertToCamelCase(rows[0]);
-    }
+    static async findByQuery(queryParams = {}) {
+        let query = "SELECT * FROM borrow_logs WHERE 1=1";
+        const values = [];
+        let paramCount = 1;
+    
+        // borrowDate, dueDate, returnDate, status
+        // 精确匹配字段
+        const equalFields = {
+            id: "id",
+            userID: "user_id",
+            bookID: "book_id"
+        };
 
-    // 获取用户的借阅记录
-    static async findByUserId(userId) {
-        const query = `
-            SELECT bl.*, b.title as book_title
-            FROM borrow_logs bl
-            JOIN books b ON bl.book_id = b.id
-            WHERE bl.user_id = $1
-            ORDER BY bl.borrow_date DESC
-        `;
-        const { rows } = await pool.query(query, [userId]);
-        return rows.map(row => this._convertToCamelCase(row));
+        Object.entries(equalFields).forEach(([param, field]) => {
+            if (queryParams[param]) {
+                query += ` AND ${field} = $${paramCount}`;
+                values.push(queryParams[param]);
+                paramCount++;
+            }
+        });
+    
+        // 模糊匹配其他字段
+        const likeFields = {
+            borrowDate: "borrow_date",
+            dueDate: "due_date",
+            returnDate: "return_date",
+            status: "status"
+        };
+    
+        Object.entries(likeFields).forEach(([param, field]) => {
+            if (queryParams[param]) {
+                query += ` AND ${field} ILIKE $${paramCount}`;
+                values.push(`%${queryParams[param]}%`);
+                paramCount++;
+            }
+        });
+    
+        query += " ORDER BY created_at DESC";
+    
+        const { rows } = await pool.query(query, values);
+        return rows.map((row) => this._convertToCamelCase(row));
     }
-
-    // 获取图书的借阅记录
-    static async findByBookId(bookId) {
-        const query = `
-            SELECT bl.*, b.title as book_title
-            FROM borrow_logs bl
-            JOIN books b ON bl.book_id = b.id
-            WHERE bl.book_id = $1
-            ORDER BY bl.borrow_date DESC
-        `;
-        const { rows } = await pool.query(query, [bookId]);
-        return rows.map(row => this._convertToCamelCase(row));
-    }
-
-    // 获取逾期未还的借阅记录
-    static async findOverdue() {
-        const query = `
-            SELECT bl.*, u.username, b.title as book_title
-            FROM borrow_logs bl
-            JOIN users u ON bl.user_id = u.id
-            JOIN books b ON bl.book_id = b.id
-            WHERE bl.status = 'borrowed' 
-            AND bl.due_date < CURRENT_DATE
-            ORDER BY bl.due_date ASC
-        `;
-        const { rows } = await pool.query(query);
-        return rows.map(row => this._convertToCamelCase(row));
-    }
-
-    // 计算罚款
-    static async calculateFine(id) {
-        const query = `
-            UPDATE borrow_logs 
-            SET fine = CASE 
-                WHEN status = 'borrowed' AND due_date < CURRENT_TIMESTAMP 
-                THEN EXTRACT(DAY FROM (CURRENT_TIMESTAMP - due_date)) * 1.00
-                ELSE fine 
-                END
-            WHERE id = $1
-            RETURNING *
-        `;
-        const { rows } = await pool.query(query, [id]);
-        return this._convertToCamelCase(rows[0]);
-    }
-
-    // 获取用户当前借阅数量
-    static async getCurrentBorrowCount(userId) {
-        const query = `
-            SELECT COUNT(*) as count
-            FROM borrow_logs
-            WHERE user_id = $1 AND status = 'borrowed'
-        `;
-        const { rows } = await pool.query(query, [userId]);
-        return parseInt(rows[0].count);
-    }
+    
 }
 
 module.exports = BorrowLog; 
