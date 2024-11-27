@@ -569,7 +569,7 @@ class AdminController {
 
     static async getBorrowLogs(req, res, next) {
         try {
-            const { id, userID, bookID, borrowDate, dueDate, returnDate, status } = req.query;
+            const { id, userId, bookId, borrowDate, dueDate, returnDate, status } = req.query;
 
             if (status.toLowerCase() !== "borrowed" && status.toLowerCase() !== "returned" && status) {
                 return res.status(400).json({
@@ -578,7 +578,7 @@ class AdminController {
                 });
             }
 
-            const queryParams = { id, userID, bookID, borrowDate, dueDate, returnDate, status };
+            const queryParams = { id, userId, bookId, borrowDate, dueDate, returnDate, status };
             const findBorrowLogs = await BorrowLog.findByQuery(queryParams);
 
             if (findBorrowLogs.length === 0) {

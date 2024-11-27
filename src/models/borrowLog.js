@@ -99,8 +99,8 @@ class BorrowLog {
         // 精确匹配字段
         const equalFields = {
             id: "id",
-            userID: "user_id",
-            bookID: "book_id"
+            userId: "user_id",
+            bookId: "book_id"
         };
 
         Object.entries(equalFields).forEach(([param, field]) => {
