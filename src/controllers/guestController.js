@@ -55,7 +55,7 @@ class GuestController {
             if (title) queryParams.title = title;
             if (author) queryParams.author = author;
             if (category) queryParams.category = category;
-            queryParams.userID = -1;
+            queryParams.userId = -1;
 
             const papers = await Paper.findByQuery(queryParams);
 

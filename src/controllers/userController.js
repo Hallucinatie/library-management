@@ -176,7 +176,7 @@ class UserController {
             if (title) queryParams.title = title;
             if (author) queryParams.author = author;
             if (category) queryParams.category = category;
-            queryParams.userID = req.user.id;
+            queryParams.userId = req.user.id;
 
             const papers = await Paper.findByQuery(queryParams);
 
@@ -225,7 +225,7 @@ class UserController {
                 code: 200,
                 msg: '借阅成功',
                 data: borrowLog,
-                borrowLogID: borrowLog.id
+                borrowLogId: borrowLog.id
             });
         } catch (error) {
             next(error);
@@ -234,7 +234,7 @@ class UserController {
 
     static async returnBook(req, res, next) {
         try {
-            const borrowId = req.query.borrowID;
+            const borrowId = req.query.borrowId;
             const borrowLog = await BorrowLog.return(borrowId);
             
             if (!borrowLog) {

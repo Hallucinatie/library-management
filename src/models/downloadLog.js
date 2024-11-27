@@ -1,6 +1,6 @@
 const { pool } = require('../config/database');
 
-class BorrowLog {
+class DownloadLog {
     // 转换为驼峰命名
     static _convertToCamelCase(log) {
         if (!log) return null;
@@ -13,10 +13,6 @@ class BorrowLog {
             returnDate: log.return_date,
             status: log.status,
             createdAt: log.created_at,
-            updatedAt: log.updated_at,
-            // 关联数据的转换
-            username: log.username,
-            bookTitle: log.book_title
         };
     }
 
@@ -99,8 +95,8 @@ class BorrowLog {
         // 精确匹配字段
         const equalFields = {
             id: "id",
-            userId: "user_id",
-            bookId: "book_id"
+            userID: "user_id",
+            bookID: "book_id"
         };
 
         Object.entries(equalFields).forEach(([param, field]) => {
