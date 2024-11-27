@@ -14,7 +14,7 @@ class UserController {
             };
             const paper = await Paper.create(paperData);
             logger.info(`用户 ${req.user.username} 上传了新论文: ${paper.title}`);
-            res.status(201).json({
+            res.status(200).json({
                 code: 200,
                 msg: '论文上传成功',
                 data: paper
@@ -42,7 +42,7 @@ class UserController {
             res.status(200).json({
                 code: 200,
                 msg: '论文下载成功',
-                body: existingPaper,
+                data: existingPaper,
                 fileUrl: existingPaper.fileUrl
             });
         } catch (error) {
@@ -56,8 +56,8 @@ class UserController {
         try {
             const {id, title, author, isbn, category} = req.query;
             
-            if(id){
-                const book=await Book.findById(id);
+            if(id) {
+                const book = await Book.findById(id);
                 if(!book){
                     return res.status(404).json({
                         code: 404,
@@ -108,7 +108,7 @@ class UserController {
             const queryParams = {};
             if (title) queryParams.title = title;
             if (author) queryParams.author = author;
-            if(isbn) queryParams.isbn=isbn;
+            if (isbn) queryParams.isbn = isbn;
             if (category) queryParams.category = category;
 
             const books = await Book.findByQuery(queryParams);
@@ -195,20 +195,20 @@ class UserController {
     // 借阅操作
     static async borrowBook(req, res, next) {
         try {
-            const { bookId } = req.body;
-            const existingBookbook = await Book.findById(bookId);
+            const {id} = req.query;
+            const existingBookbook = await Book.findById(id);
             
             if (!existingBookbook) {
                 return res.status(404).json({code: 404, message: '图书不存在'});
             }
             
-            const availableQuantity = await Book.getAvailableQuantity(bookId);
+            const availableQuantity = await Book.getAvailableQuantity(id);
             if (availableQuantity <= 0) {
                 return res.status(400).json({code: 400, message: '图书已全部借出'});
             }
 
             // 更新借出数量
-            const updatedBook = await Book.updateLoans(bookId, true);
+            const updatedBook = await Book.updateLoans(id, true);
             if (!updatedBook) {
                 return res.status(400).json({code: 400, message: '借阅失败，图书可能已被借出'});
             }
@@ -216,13 +216,13 @@ class UserController {
             // 创建借阅记录
             const borrowLog = await BorrowLog.create({
                 userId: req.user.id,
-                bookId,
+                bookId: id,
                 dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30天后
             });
 
             logger.info(`用户 ${req.user.username} 借阅了图书: ${updatedBook.title}`);
-            res.status(201).json({
-                code: 201,
+            res.status(200).json({
+                code: 200,
                 msg: '借阅成功',
                 data: borrowLog,
                 borrowLogID: borrowLog.id
@@ -234,7 +234,7 @@ class UserController {
 
     static async returnBook(req, res, next) {
         try {
-            const { borrowId } = req.body;
+            const borrowId = req.query.borrowID;
             const borrowLog = await BorrowLog.return(borrowId);
             
             if (!borrowLog) {
@@ -248,8 +248,8 @@ class UserController {
             }
 
             logger.info(`用户 ${req.user.username} 归还了图书: ${updatedBook.title}`);
-            res.status(201).json({
-                code: 201,
+            res.status(200).json({
+                code: 200,
                 msg: '归还成功',
                 data: borrowLog
             });

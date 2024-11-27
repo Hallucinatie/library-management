@@ -49,7 +49,7 @@ class Book {
         const query = `
             INSERT INTO books (title, author, isbn, quantity, loans, loans_count, description, 
                              category, publisher, publish_date)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
             RETURNING *
         `;
         const values = [
