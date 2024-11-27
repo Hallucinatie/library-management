@@ -34,11 +34,11 @@ const bookValidationRules = () => [
 const paperValidationRules = () => [
     body('title').isString().notEmpty().withMessage('论文标题不能为空'),
     body('author').isString().notEmpty().withMessage('作者不能为空'),
-    body('abstract').optional().isString(),
-    body('keywords').optional().isArray(),
+    body('abstract').optional().isString().withMessage('摘要必须是字符串'),
+    body('keywords').optional({ nullable: true }).isArray().withMessage('关键词必须是数组'),
     body('fileUrl').isURL().withMessage('无效的文件URL'),
-    body('isPublic').optional().isBoolean(),
-    body('category').optional().isString(),
+    body('isPublic').optional().isBoolean().withMessage('isPublic必须是布尔值'),
+    body('category').optional({ nullable: true }).isString().withMessage('分类必须是字符串'),
     body('publicationDate').optional().isISO8601().withMessage('发布日期格式无效')
 ];
 
