@@ -8,7 +8,8 @@ const {
     paperValidationRules,
     userValidationRules,
     idParamValidation,
-    adminRegisterValidation
+    adminRegisterValidation,
+    adminUpdateUserRules
 } = require('../middleware/validator');
 
 // 所有管理员路由都需要管理员权限
@@ -31,7 +32,7 @@ router.get('/papers', AdminController.getPapers);
 
 // 用户管理路由
 router.post('/users', userValidationRules(), validate, AdminController.addUser);
-router.put('/users/:id', idParamValidation(), userValidationRules(), validate, AdminController.updateUser);
+router.put('/users/:id', idParamValidation(), adminUpdateUserRules(), validate, AdminController.updateUser);
 router.delete('/users/:id', idParamValidation(), validate, AdminController.deleteUser);
 router.get('/users', AdminController.getUsers);
 

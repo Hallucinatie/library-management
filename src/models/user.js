@@ -35,7 +35,7 @@ class User {
     // 创建新用户
     static async create(userData) {
         const snakeCaseData = this._convertToSnakeCase(userData);
-        
+
         const query = `
             INSERT INTO users (username, password, email, role, status)
             VALUES ($1, $2, $3, $4, $5)
@@ -49,10 +49,10 @@ class User {
             userData.status || 'active'
         ];
 
-        try{
+        try {
             const { rows } = await pool.query(query, values);
             return this._convertToCamelCase(rows[0]);
-        }catch(error){
+        } catch (error) {
             if (error.code === '23505') {
                 throw new Error('用户已存在');
             }
@@ -79,18 +79,16 @@ class User {
 
         const query = `
             UPDATE users 
-            SET ${updateFields.join(', ')}
+            SET ${updateFields.join(', ')},  
+                updated_at = CURRENT_TIMESTAMP    -- 添加了逗号
             WHERE id = $1
             RETURNING *
         `;
 
-        try{
+        try {
             const { rows } = await pool.query(query, values);
             return this._convertToCamelCase(rows[0]);
-        }catch(error){
-            if (error.code === '23505') {
-                throw new Error('用户文件已存在');
-            }
+        } catch (error) {
             throw error;
         }
     }
@@ -103,10 +101,10 @@ class User {
             RETURNING *
         `;
 
-        try{
+        try {
             const { rows } = await pool.query(query, [id]);
             return this._convertToCamelCase(rows[0]);
-        }catch(error){
+        } catch (error) {
             throw error;
         }
     }
