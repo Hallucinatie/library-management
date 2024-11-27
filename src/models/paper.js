@@ -186,9 +186,9 @@ class Paper {
       }
     });
 
-    if (queryParams.userId) {
-        query += ` AND (user_id = $${paramCount} OR is_public = 1)`;
-        values.push(`%${queryParams.userId}%`);
+    if (queryParams.userID) {
+        query += ` AND (user_id = $${paramCount} OR is_public = true)`;
+        values.push(queryParams.userID);
         paramCount++;
     }
 
