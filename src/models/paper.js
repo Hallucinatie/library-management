@@ -50,13 +50,13 @@ class Paper {
     const snakeCaseData = this._convertToSnakeCase(paperData);
 
     const query = `
-            INSERT INTO papers (
-                title, author, abstract, keywords, file_url, is_public, 
-                user_id, category, publication_date
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            RETURNING *
-        `;
+        INSERT INTO papers (
+            title, author, abstract, keywords, file_url, is_public, 
+            user_id, category, publication_date
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING *
+    `;
 
     const values = [
       paperData.title,
@@ -74,9 +74,6 @@ class Paper {
       const { rows } = await pool.query(query, values);
       return this._convertToCamelCase(rows[0]);
     } catch (error) {
-      if (error.code === "23505") {
-        throw new Error("论文文件已存在");
-      }
       throw error;
     }
   }
@@ -105,15 +102,12 @@ class Paper {
             SET ${updateFields.join(", ")}
             WHERE id = $1
             RETURNING *
-        `;
+    `;
 
     try {
       const { rows } = await pool.query(query, values);
       return this._convertToCamelCase(rows[0]);
     } catch (error) {
-      if (error.code === "23505") {
-        throw new Error("论文文件已存在");
-      }
       throw error;
     }
   }
