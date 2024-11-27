@@ -300,17 +300,56 @@ class AdminController {
   // 用户管理
   static async addUser(req, res, next) {
     try {
-      const UserData = {
-        ...req.body,
-        userId: req.user.id,
-      };
+      const { username, password, email } = req.body;
 
-      const user = await User.create(req.body);
-      logger.info(`新用户已添加: ${user.username}`);
+      // 检查用户名是否已存在
+      const existingUser = await User.findByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({
+          code: 400,
+          msg: "用户名已存在",
+          data: null,
+        });
+      }
+
+      // 检查邮箱是否已存在
+      const existingEmail = await User.findByEmail(email);
+      if (existingEmail) {
+        return res.status(400).json({
+          code: 400,
+          msg: "邮箱已被使用",
+          data: null,
+        });
+      }
+
+      // 加密密码
+      const saltRounds = 10;
+      const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+      // 创建新用户
+      const user = await User.create({
+        username,
+        password: hashedPassword,
+        email,
+        role: "user",
+        status: "active",
+      });
+
+      logger.info(`管理员 ${req.user.username} 创建了新用户: ${username}`);
+
+      // 返回用户信息（不包含密码）
       res.status(200).json({
         code: 200,
         msg: "用户添加成功",
-        data: user,
+        data: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        },
       });
     } catch (error) {
       logger.error(`添加用户失败: ${error.message}`);
