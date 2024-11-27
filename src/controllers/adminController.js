@@ -12,7 +12,7 @@ class AdminController {
     try {
       const bookData = {
         ...req.body,
-        userId: req.user.id, // 这里自动绑定当前登录用户的ID
+        userId: req.user.id, // 这里自动绑定当前登录用户的ID，通过解析token获取
       };
 
       const book = await Book.create(bookData);
@@ -193,7 +193,6 @@ class AdminController {
           data: null,
         });
       }
-      // logger.info(`existingPaper.userId: ${existingPaper.userid}, req.user.id: ${req.user.id}`);
 
       // 检查是否有权限修改（只能修改自己创建的论文）
       // PostgreSQL 返回的列名是小写的
@@ -281,16 +280,16 @@ class AdminController {
       if (papers.length === 0) {
         return res.status(404).json({
           code: 404,
-          msg: '未找到符合条件的论文',
-          data: null
+          msg: "未找到符合条件的论文",
+          data: null,
         });
       }
 
       res.json({
         code: 200,
-        msg: '查询成功',
+        msg: "查询成功",
         data: papers,
-        total: papers.length
+        total: papers.length,
       });
     } catch (error) {
       logger.error(`查询论文失败: ${error.message}`);
