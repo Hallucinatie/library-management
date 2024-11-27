@@ -186,6 +186,12 @@ class Paper {
       }
     });
 
+    if (queryParams.userId) {
+        query += ` AND (user_id = $${paramCount} OR is_public = 1)`;
+        values.push(`%${queryParams.userId}%`);
+        paramCount++;
+    }
+
     query += " ORDER BY created_at DESC";
 
     const { rows } = await pool.query(query, values);
