@@ -91,6 +91,25 @@ const registerValidation = [
         .withMessage('无效的电子邮件地址')
 ];
 
+// 用户更新验证规则
+const adminUpdateUserRules = () => [
+    body('username')
+        .optional()
+        .isString()
+        .isLength({ min: 3 })
+        .withMessage('用户名至少3个字符')
+        .matches(/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/)
+        .withMessage('用户名只能包含字母、数字、下划线和中文'),
+    body('status')
+        .optional()
+        .isIn(['active', 'inactive'])
+        .withMessage('无效的状态'),
+    body('resetPassword')
+        .optional()
+        .isBoolean()
+        .withMessage('resetPassword必须是布尔值')
+];
+
 module.exports = {
     validate,
     userValidationRules,
@@ -99,5 +118,6 @@ module.exports = {
     idParamValidation,
     borrowValidationRules,
     adminRegisterValidation,
-    registerValidation
+    registerValidation,
+    adminUpdateUserRules
 }; 

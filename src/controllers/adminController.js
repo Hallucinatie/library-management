@@ -302,6 +302,7 @@ class AdminController {
     try {
       const { username, password, email } = req.body;
 
+
       // 检查用户名是否已存在
       const existingUser = await User.findByUsername(username);
       if (existingUser) {
@@ -359,23 +360,70 @@ class AdminController {
 
   static async updateUser(req, res, next) {
     try {
+      // 首先检查用户是否存在
       const existingUser = await User.findById(req.params.id);
       if (!existingUser) {
         return res.status(404).json({
           code: 404,
-          msg: "未找到该用户",
-          data: null,
+          msg: '未找到该用户',
+          data: null
         });
       }
 
-      const user = await User.update(req.params.id, req.body);
+      const { username, status, resetPassword } = req.body;
+      const updateData = {};
 
-      logger.info(`用户已更新: ${user.username}`);
+      // 如果提供了用户名，检查是否与其他用户重复
+      if (username && username !== existingUser.username) {
+        const userWithSameUsername = await User.findByUsername(username);
+        if (userWithSameUsername) {
+          return res.status(400).json({
+            code: 400,
+            msg: '用户名已存在',
+            data: null
+          });
+        }
+        updateData.username = username;
+      }
 
+      // 如果要重置密码
+      if (resetPassword === true) {
+        const saltRounds = 10;
+        const defaultPassword = '123456';
+        updateData.password = await bcrypt.hash(defaultPassword, saltRounds);
+        logger.info(`管理员 ${req.user.username} 重置了用户 ${existingUser.username} 的密码`);
+      }
+
+      // 更新状态
+      if (status) updateData.status = status;
+
+      // 如果没有任何要更新的字段
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({
+          code: 400,
+          msg: '没有提供任何要更新的字段',
+          data: null
+        });
+      }
+
+      // 执行更新
+      const updatedUser = await User.update(req.params.id, updateData);
+
+      logger.info(`用户已更新: ${updatedUser.username}`);
+
+      // 返回更新后的用户信息（不包含密码）
       res.json({
         code: 200,
-        msg: "用户更新成功",
-        data: user,
+        msg: '用户更新成功',
+        data: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          role: updatedUser.role,
+          status: updatedUser.status,
+          createdAt: updatedUser.createdAt,
+          updatedAt: updatedUser.updatedAt
+        }
       });
     } catch (error) {
       logger.error(`更新用户失败: ${error.message}`);
