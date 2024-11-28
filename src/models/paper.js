@@ -103,8 +103,7 @@ class Paper {
 
     const query = `
         UPDATE papers 
-            SET ${updateFields.join(", ")},
-                updated_at = CURRENT_TIMESTAMP
+            SET ${updateFields.join(", ")}
             WHERE id = $1
             RETURNING *
     `;

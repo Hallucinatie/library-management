@@ -95,8 +95,7 @@ class Book {
 
         const query = `
             UPDATE books 
-            SET ${updateFields.join(', ')},
-                updated_at = CURRENT_TIMESTAMP
+            SET ${updateFields.join(', ')}
             WHERE id = $1
             RETURNING *
         `;
