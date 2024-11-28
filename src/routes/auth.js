@@ -13,6 +13,8 @@ const loginValidation = [
 // 统一的登录路由
 router.post('/login', loginValidation, validate, AuthController.login);
 
+router.post('/getcode',AuthController.sendCode);
+router.post('/loginbyemail',AuthController.loginbyemail);
 // 用户注册路由
 router.post('/register', userValidationRules(), validate, AuthController.register);
 
