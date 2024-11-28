@@ -8,6 +8,9 @@ class BorrowLog {
             id: log.id,
             userId: log.user_id,
             bookId: log.book_id,
+            bookTitle: log.book_title,
+            bookAuthor: log.book_author,
+            bookIsbn: log.book_isbn,
             borrowDate: log.borrow_date,
             dueDate: log.due_date,
             returnDate: log.return_date,
@@ -25,12 +28,14 @@ class BorrowLog {
         const converted = {};
         if (logData.userId) converted.user_id = logData.userId;
         if (logData.bookId) converted.book_id = logData.bookId;
+        if (logData.bookTitle) converted.book_title = logData.bookTitle;
+        if (logData.bookAuthor) converted.book_author = logData.bookAuthor;
+        if (logData.bookIsbn) converted.book_isbn = logData.bookIsbn;
         if (logData.borrowDate) converted.borrow_date = logData.borrowDate;
         if (logData.dueDate) converted.due_date = logData.dueDate;
         if (logData.returnDate) converted.return_date = logData.returnDate;
         if (logData.createdAt) converted.created_at = logData.createdAt;
         if (logData.updatedAt) converted.updated_at = logData.updatedAt;
-        if (logData.bookTitle) converted.book_title = logData.bookTitle;
 
         // 保持原样的字段
         if (logData.status) converted.status = logData.status;
@@ -42,14 +47,18 @@ class BorrowLog {
     // 创建借阅记录
     static async create(borrowData) {
         const snakeCaseData = this._convertToSnakeCase(borrowData);
+
         const query = `
-            INSERT INTO borrow_logs (user_id, book_id, borrow_date, due_date, status)
-            VALUES ($1, $2, $3, $4, 'borrowed')
+            INSERT INTO borrow_logs (user_id, book_id, book_title, book_author, book_isbn, borrow_date, due_date, status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'borrowed')
             RETURNING *
         `;
         const values = [
             snakeCaseData.user_id,
             snakeCaseData.book_id,
+            snakeCaseData.book_title,
+            snakeCaseData.book_author,
+            snakeCaseData.book_isbn,
             snakeCaseData.borrow_date || new Date(),
             snakeCaseData.due_date
         ];
@@ -100,7 +109,8 @@ class BorrowLog {
         const equalFields = {
             id: "id",
             userId: "user_id",
-            bookId: "book_id"
+            bookId: "book_id",
+            bookIsbn: "book_isbn"
         };
 
         Object.entries(equalFields).forEach(([param, field]) => {
@@ -113,6 +123,8 @@ class BorrowLog {
 
         // 模糊匹配其他字段
         const likeFields = {
+            bookTitle: "book_title",
+            bookAuthor: "book_author",
             borrowDate: "borrow_date",
             dueDate: "due_date",
             returnDate: "return_date",

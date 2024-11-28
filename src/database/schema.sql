@@ -49,6 +49,9 @@ CREATE TABLE borrow_logs (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
     book_id INTEGER REFERENCES books(id),
+    book_title VARCHAR(255) REFERENCES NOT NULL,
+    book_author VARCHAR(100) REFERENCES NOT NULL,
+    book_isbn VARCHAR(13) REFERENCES NOT NULL,
     borrow_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     due_date TIMESTAMP NOT NULL,
     return_date TIMESTAMP,
@@ -62,6 +65,8 @@ CREATE TABLE download_logs (
     id SERIAL PRIMARY KEY,
     user_id INTEGER REFERENCES users(id),
     paper_id INTEGER REFERENCES papers(id),
+    paper_title VARCHAR(255) NOT NULL,
+    paper_author VARCHAR(100) NOT NULL,
     download_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

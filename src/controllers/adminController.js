@@ -416,96 +416,101 @@ class AdminController {
   }
 
   // 借阅管理
-  static async deleteBorrowLog(req, res, next) {
-    try {
-      const borrowLogId = req.params.id;
-      console.log(borrowLogId);
-      const borrowLog = await BorrowLog.delete(borrowLogId);
-      if (!borrowLog) {
-        return res.status(404).json({ code: 404, message: "未找到该借阅记录" });
-      }
-      logger.info(`借阅记录已删除: ID ${borrowLog.id}`);
-      res.status(200).json({
-        code: 200,
-        msg: "借阅记录删除成功",
-        data: borrowLog
-      });
-    } catch (error) {
-      next(error);
+    static async deleteBorrowLog(req, res, next) {
+        try {
+            const borrowLogId = req.params.id;
+            const borrowLog = await BorrowLog.delete(borrowLogId);
+            if (!borrowLog) {
+                return res.status(404).json({ code: 404, message: "未找到该借阅记录" });
+            }
+            logger.info(`借阅记录已删除: ID ${borrowLog.id}`);
+            res.status(200).json({
+                code: 200,
+                msg: "借阅记录删除成功",
+                data: borrowLog
+            });
+        } catch (error) {
+            next(error);
+        }
     }
-  }
 
-  static async getBorrowLogs(req, res, next) {
-    try {
-      const { id, userId, bookId, borrowDate, dueDate, returnDate, status } = req.query;
+    static async getBorrowLogs(req, res, next) {
+        try {
+            const { id, userId, 
+                bookId, bookTitle, bookAuthor, bookIsbn, 
+                borrowDate, dueDate, returnDate, 
+                status } = req.query;
 
-      const queryParams = { id, userId, bookId, borrowDate, dueDate, returnDate, status };
-      const findBorrowLogs = await BorrowLog.findByQuery(queryParams);
+            const queryParams = { id, userId, 
+                bookId, bookTitle, bookAuthor, bookIsbn, 
+                borrowDate, dueDate, returnDate, 
+                status };
+            const findBorrowLogs = await BorrowLog.findByQuery(queryParams);
+                
+            console.log(queryParams)
+            if (findBorrowLogs.length === 0) {
+                return res.status(404).json({
+                code: 404,
+                messsage: "未找到符合条件的借阅记录",
+                });
+            }
 
-      if (findBorrowLogs.length === 0) {
-        return res.status(404).json({
-          code: 404,
-          messsage: "未找到符合条件的借阅记录",
-        });
-      }
-
-      res.json({
-        code: 200,
-        msg: "查询成功",
-        data: findBorrowLogs,
-        total: findBorrowLogs.length,
-      });
-    } catch (error) {
-      logger.error(`查询借阅记录失败: ${error.message}`);
-      next(error);
+            res.json({
+                code: 200,
+                msg: "查询成功",
+                data: findBorrowLogs,
+                total: findBorrowLogs.length,
+            });
+        } catch (error) {
+            logger.error(`查询借阅记录失败: ${error.message}`);
+            next(error);
+        }
     }
-  }
 
   // 下载管理
-  static async deleteDownloadLog(req, res, next) {
-    try {
-      const downloadLogId = req.params.id;
-      console.log(downloadLogId);
-      const downloadLog = await DownloadLog.delete(downloadLogId);
-      if (!downloadLog) {
-        return res.status(404).json({ code: 404, message: "未找到该下载记录" });
-      }
-      logger.info(`下载记录已删除: ID ${downloadLog.id}`);
-      res.status(200).json({
-        code: 200,
-        msg: "下载记录删除成功",
-        data: downloadLog
-      });
-    } catch (error) {
-      next(error);
+    static async deleteDownloadLog(req, res, next) {
+        try {
+            const downloadLogId = req.params.id;
+            const downloadLog = await DownloadLog.delete(downloadLogId);
+            if (!downloadLog) {
+                return res.status(404).json({ code: 404, message: "未找到该下载记录" });
+            }
+            logger.info(`下载记录已删除: ID ${downloadLog.id}`);
+            res.status(200).json({
+                code: 200,
+                msg: "下载记录删除成功",
+                data: downloadLog
+            });
+        } catch (error) {
+            next(error);
+        }
     }
-  }
 
-  static async getDownloadLogs(req, res, next) {
-    try {
-      const { id, userId, paperId, downloadDate } = req.query;
+    static async getDownloadLogs(req, res, next) {
+        try {
+            const { id, userId, paperId, paperTitle, paperAuthor, downloadDate } = req.query;
 
-      const queryParams = { id, userId, paperId, downloadDate };
-      const findDownloadLogs = await DownloadLog.findByQuery(queryParams);
+            const queryParams = { id, userId, paperId, paperTitle, paperAuthor, downloadDate };
+            const findDownloadLogs = await DownloadLog.findByQuery(queryParams);
 
-      if (findDownloadLogs.length === 0) {
-        return res.status(404).json({
-          code: 404,
-          messsage: "未找到符合条件的下载记录",
-        });
-      }
+            if (findDownloadLogs.length === 0) {
+                return res.status(404).json({
+                code: 404,
+                messsage: "未找到符合条件的下载记录",
+                });
+            }
 
-      res.json({
-        code: 200,
-        msg: "查询成功",
-        data: findDownloadLogs,
-        total: findDownloadLogs.length,
-      });
-    } catch (error) {
-      logger.error(`查询下载记录失败: ${error.message}`);
-      next(error);
+            res.json({
+                code: 200,
+                msg: "查询成功",
+                data: findDownloadLogs,
+                total: findDownloadLogs.length,
+            });
+        } catch (error) {
+            logger.error(`查询下载记录失败: ${error.message}`);
+            next(error);
+        }
     }
-  }
 
   // 统计信息
   static async getStatistics(req, res, next) {

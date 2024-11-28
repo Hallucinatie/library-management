@@ -42,6 +42,8 @@ class UserController {
             await DownloadLog.create({
                 userId: req.user.id,
                 paperId: existingPaper.id,
+                paperTitle: existingPaper.title,
+                paperAuthor: existingPaper.author,
                 downloadDate: new Date()
             });
 
@@ -65,8 +67,6 @@ class UserController {
                 );
             } catch (error) {}
             
-            console.log(paperDownloaded)
-
             if (paperDownloaded) {
                 res.status(200).json({
                     code: 200,
@@ -257,6 +257,9 @@ class UserController {
             const borrowLog = await BorrowLog.create({
                 userId: req.user.id,
                 bookId: id,
+                bookTitle: updatedBook.title,
+                bookAuthor: updatedBook.author,
+                bookIsbn:  updatedBook.isbn,
                 dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30天后
             });
 
