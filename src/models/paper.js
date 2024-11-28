@@ -1,5 +1,9 @@
 const { pool } = require("../config/database");
 
+const https = require('https');
+const fs = require('fs');
+const path = require('path');
+
 class Paper {
   // 将数据库蛇形命名转换为驼峰命名
   static _convertToCamelCase(paper) {
@@ -198,6 +202,54 @@ class Paper {
     const { rows } = await pool.query(query, values);
     return rows.map((row) => this._convertToCamelCase(row));
   }
+    
+    static async downloadFile(url, downloadDir, callback) {
+        
+        const fileName = path.basename(url);
+        const filePath = path.join(downloadDir, fileName);
+        const file = fs.createWriteStream(filePath);
+    
+        // 发送GET请求下载文件
+        https.get(url, (response) => {
+            response.pipe(file);
+    
+            // 当文件写入完成时，调用回调函数
+            file.on('finish', () => {
+                file.close(() => {
+                    callback(null, filePath);
+                });
+            });
+        }).on('error', (err) => {
+            // 处理错误
+            fs.unlink(filePath, () => {}); // 删除文件（如果已创建）
+            callback(err.message);
+        });
+
+        return filePath
+    }
+
+    static async clearDirectory(dirPath) {
+
+        let totalSize = 0;
+        const fileInfo = [];
+
+        // 读取目录中的所有文件
+        const files = fs.readdirSync(dirPath);
+
+        // 遍历文件并删除
+        files.forEach(file => {
+            const filePath = path.join(dirPath, file);
+            if (fs.lstatSync(filePath).isFile()) {
+                const fileSize = fs.lstatSync(filePath).size;
+                fs.unlinkSync(filePath);
+                fileInfo.push({ name: file, size: fileSize });
+                totalSize += fileSize;
+            }
+        });
+
+        return { cleanedFiles: fileInfo, totalSize };
+    }
+
 }
 
 module.exports = Paper;
