@@ -439,13 +439,6 @@ class AdminController {
     try {
       const { id, userId, bookId, borrowDate, dueDate, returnDate, status } = req.query;
 
-      if (status.toLowerCase() !== "borrowed" && status.toLowerCase() !== "returned" && status) {
-        return res.status(400).json({
-          code: 400,
-          messsage: `status关键字必须为 borrowed 或 returned, 传入 ${status}.`,
-        });
-      }
-
       const queryParams = { id, userId, bookId, borrowDate, dueDate, returnDate, status };
       const findBorrowLogs = await BorrowLog.findByQuery(queryParams);
 
