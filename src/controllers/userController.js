@@ -91,6 +91,34 @@ class UserController {
         }
     }
 
+    static async getDownloadLogs(req, res, next) {
+        try {
+            const { paperId, paperTitle, paperAuthor, downloadDate } = req.query;
+            const id = null;
+            const userId = req.user.id;
+            
+            const queryParams = { id, userId, paperId, paperTitle, paperAuthor, downloadDate };
+            const findDownloadLogs = await DownloadLog.findByQuery(queryParams);
+
+            if (findDownloadLogs.length === 0) {
+                return res.status(404).json({
+                code: 404,
+                messsage: "未找到符合条件的下载记录",
+                });
+            }
+
+            res.json({
+                code: 200,
+                msg: "查询成功",
+                data: findDownloadLogs,
+                total: findDownloadLogs.length,
+            });
+        } catch (error) {
+            logger.error(`查询下载记录失败: ${error.message}`);
+            next(error);
+        }
+    }
+
     // 查询操作
     static async getBooks(req, res, next) {
         try {
@@ -297,6 +325,41 @@ class UserController {
                 data: borrowLog
             });
         } catch (error) {
+            next(error);
+        }
+    }
+
+    static async getBorrowLogs(req, res, next) {
+        try {
+            const {
+                bookId, bookTitle, bookAuthor, bookIsbn, 
+                borrowDate, dueDate, returnDate, 
+                status 
+            } = req.query;
+            const id = null;
+            const userId = req.user.id;
+            
+            const queryParams = { id, userId, 
+                bookId, bookTitle, bookAuthor, bookIsbn, 
+                borrowDate, dueDate, returnDate, 
+                status };
+            const findBorrowLogs = await BorrowLog.findByQuery(queryParams);
+                
+            if (findBorrowLogs.length === 0) {
+                return res.status(404).json({
+                code: 404,
+                messsage: "未找到符合条件的借阅记录",
+                });
+            }
+
+            res.json({
+                code: 200,
+                msg: "查询成功",
+                data: findBorrowLogs,
+                total: findBorrowLogs.length,
+            });
+        } catch (error) {
+            logger.error(`查询借阅记录失败: ${error.message}`);
             next(error);
         }
     }

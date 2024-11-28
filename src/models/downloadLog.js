@@ -65,6 +65,7 @@ class DownloadLog {
         // 精确匹配字段
         const equalFields = {
             id: "id",
+            userId: "user_id",
             paperId: "paper_id"
         };
 

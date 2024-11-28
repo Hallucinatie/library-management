@@ -447,7 +447,6 @@ class AdminController {
                 status };
             const findBorrowLogs = await BorrowLog.findByQuery(queryParams);
                 
-            console.log(queryParams)
             if (findBorrowLogs.length === 0) {
                 return res.status(404).json({
                 code: 404,
