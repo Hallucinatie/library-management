@@ -607,6 +607,23 @@ class AdminController {
       next(error);
     }
   }
+
+    static async clearLocalPaperCache(req, res, next) {
+        try {
+
+            const cleanedFiles = await Paper.clearDirectory('localPapers/');
+
+            res.json({
+                code: 200,
+                msg: "清空成功",
+                data: cleanedFiles
+            });
+
+        } catch (error) {
+            logger.error(`本地论文缓存清空失败: ${error.message}`);
+            next(error);
+        }
+    }
 }
 
 module.exports = AdminController;

@@ -39,21 +39,54 @@ class UserController {
 
             // 更新下载次数 生成下载日志
             await Paper.incrementDownloadCount(existingPaper.id);
-            const downloadLog = await DownloadLog.create({
+            await DownloadLog.create({
                 userId: req.user.id,
                 paperId: existingPaper.id,
                 downloadDate: new Date()
             });
 
             logger.info(`用户 ${req.user.username} 下载了论文: ${existingPaper.title}`);
-            res.status(200).json({
-                code: 200,
-                msg: '论文下载成功',
-                data: existingPaper,
-                fileUrl: existingPaper.fileUrl
-            });
+            
+            let paperDownloaded = true;
+            let paperDownloadErrorInfo = null;
+            let paperLocalPath = null
+            try {
+                paperLocalPath = await Paper.downloadFile(
+                    existingPaper.fileUrl,
+                    'localPapers',
+                    (err, filePath) => { 
+                        if (err) { 
+                            paperDownloaded = false;
+                            paperDownloadErrorInfo = err;
+                        } else { 
+                            logger.log('File downloaded to:', filePath); 
+                        } 
+                    }
+                );
+            } catch (error) {}
+            
+            console.log(paperDownloaded)
+
+            if (paperDownloaded) {
+                res.status(200).json({
+                    code: 200,
+                    msg: '论文下载成功',
+                    data: existingPaper,
+                    fileUrl: existingPaper.fileUrl,
+                    filePath: paperLocalPath
+                });
+            } else {
+                res.status(200).json({
+                    code: 200,
+                    msg: '论文查询成功，但未能下载',
+                    data: existingPaper,
+                    fileUrl: existingPaper.fileUrl,
+                    downloadError: paperDownloadErrorInfo
+                });
+            }
+
         } catch (error) {
-            logger.error(`删除下载失败: ${error.message}`);
+            logger.error(`论文下载失败: ${error.message}`);
             next(error);
         }
     }

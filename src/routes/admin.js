@@ -43,6 +43,7 @@ router.get('/borrow-logs', AdminController.getBorrowLogs);
 // 下载管理路由
 router.delete('/download-logs/:id', idParamValidation(), validate, AdminController.deleteDownloadLog);
 router.get('/download-logs', AdminController.getDownloadLogs);
+router.delete('/clean-paper-cache', AdminController.clearLocalPaperCache);
 
 // 统计信息路由
 router.get('/statistics', AdminController.getStatistics);
