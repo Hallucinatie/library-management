@@ -74,18 +74,8 @@ const adminRegisterValidation = [
 
 // 用户注册验证规则
 const registerValidation = [
-    body('username')
-        .isString()
-        .isLength({ min: 3 })
-        .withMessage('用户名至少3个字符')
-        .matches(/^[a-zA-Z0-9_]+$/)
-        .withMessage('用户名只能包含字母、数字和下划线'),
-    body('password')
-        .isString()
-        .isLength({ min: 6 })
-        .withMessage('密码至少6个字符')
-        .matches(/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/)
-        .withMessage('密码必须包含字母和数字'),
+    body('username').isString().isLength({ min: 3 }).withMessage('用户名至少3个字符'),
+    body('password').isString().isLength({ min: 6 }).withMessage('密码至少6个字符'),
     body('email')
         .isEmail()
         .withMessage('无效的电子邮件地址')
