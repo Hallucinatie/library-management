@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# 延迟30秒启动
+sleep 30
+
 # 从 .env 文件加载环境变量
 export $(cat .env | xargs)
 
