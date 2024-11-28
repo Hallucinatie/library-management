@@ -8,6 +8,8 @@ class DownloadLog {
             id: log.id,
             userId: log.user_id,
             paperId: log.paper_id,
+            paperTitle: log.paper_title,
+            paperAuthor: log.paper_author,
             downloadDate: log.download_date,
             createdAt: log.created_at,
         };
@@ -19,6 +21,8 @@ class DownloadLog {
         if (logData.id) converted.id = logData.id;
         if (logData.userId) converted.user_id = logData.userId;
         if (logData.paperId) converted.paper_id = logData.paperId;
+        if (logData.paperTitle) converted.paper_title = logData.paperTitle;
+        if (logData.paperAuthor) converted.paper_author = logData.paperAuthor;
         if (logData.downloadDate) converted.download_date = logData.downloadDate;
         if (logData.createdAt) converted.created_at = logData.createdAt;
 
@@ -29,13 +33,15 @@ class DownloadLog {
     static async create(downloadData) {
         const snakeCaseData = this._convertToSnakeCase(downloadData);
         const query = `
-            INSERT INTO download_logs (user_id, paper_id, download_date)
-            VALUES ($1, $2, $3)
+            INSERT INTO download_logs (user_id, paper_id, paper_title, paper_author, download_date)
+            VALUES ($1, $2, $3, $4, $5)
             RETURNING *
         `;
         const values = [
             snakeCaseData.user_id,
             snakeCaseData.paper_id,
+            snakeCaseData.paper_title,
+            snakeCaseData.paper_author,
             snakeCaseData.download_date
         ];
         const { rows } = await pool.query(query, values);
@@ -72,6 +78,8 @@ class DownloadLog {
     
         // 模糊匹配其他字段
         const likeFields = {
+            paperTitle: "paper_title",
+            paperAuthor: "paper_author",
             downloadDate: "download_date",
         };
     
