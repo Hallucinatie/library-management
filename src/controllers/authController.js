@@ -7,7 +7,6 @@ const util = require('util');
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const verificationCodes = {}; // 临时存储验证码，实际项目中可以使用 Redis 或数据库
 class AuthController {
     // 统一的登录处理
     static async login(req, res, next) {
@@ -88,12 +87,15 @@ class AuthController {
                 });
             }
 
-            const code=Math.floor(1000 + Math.random() * 9000).toString();
-            const currentTime = Date.now();  // 获取当前时间戳
-            verificationCodes[email] = {
-                code:code,
-                timestamp:currentTime
-            };// 存储验证码
+
+            const verificationCode = jwt.sign(
+                {
+                    id: user.id,
+                    usage: 'email_verification',
+                },
+                JWT_SECRET,
+                { expiresIn: '1h' }
+            );
 
             let transporter = nodemailer.createTransport({
                 host: 'smtp.qq.com',
@@ -109,10 +111,10 @@ class AuthController {
             let mailOptions = {
                 from: `1691506185@qq.com`, // 发件人
                 to: email, // 收件人
-                subject: `Hello ✔`, // 主题
-                text: `图书馆登录`, // plain text body
-                html: `<b>您的验证码是:${code}</b>`, // html body
-            };
+                subject: `图书馆管理系统密码找回`, // 主题
+                text: `verificationCode`, // plain text body
+                html: `<b>您的验证码是:<br><br>${verificationCode}<br><br>您可以凭此验证码找回个人密码，请勿泄露给任何人</b>`,
+                };
 
             const sendMailPromise = util.promisify(transporter.sendMail.bind(transporter));
             await sendMailPromise(mailOptions); 
@@ -141,36 +143,16 @@ class AuthController {
                 });
             }
             
-            // 验证验证码
-            const currentTime = Date.now();
-            const storedCode = verificationCodes[email];
-
-            if (!storedCode) {
+            const decoded = jwt.verify(code, JWT_SECRET);
+            if (decoded.usage !== 'email_verification') {
                 return res.status(401).json({
                     code: 401,
-                    msg: '验证码未发送或已过期',
+                    msg: '无效的验证码',
                     data: null
                 });
             }
 
-            const codeAge = currentTime - storedCode.timestamp; // 计算验证码的存活时间
-            const expirationTime = 1 * 60 * 1000; // 1分钟 = 10 * 60 * 1000 毫秒
-            if (codeAge > expirationTime) {
-                // 如果验证码过期
-                delete verificationCodes[email]; // 删除过期的验证码
-                return res.status(401).json({
-                    code: 401,
-                    msg: '验证码已过期，请重新获取',
-                    data: null
-                });
-            }
-            if (code!==storedCode.code) {
-                return res.status(401).json({
-                    code: 401,
-                    msg: '验证码错误',
-                    data: null
-                });
-            }
+            user = await User.findById(decoded.id);
 
             // 检查用户状态
             if (user.status !== 'active') {
