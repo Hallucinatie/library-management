@@ -10,10 +10,13 @@ router.use(userAuth);
 router.post('/papers', UserController.uploadPaper);
 router.get('/papers/:id/download', UserController.downloadPaper);
 router.get('/papers', UserController.getPapers);
+router.get('/download-logs', UserController.getDownloadLogs);
+
 
 // 图书相关路由
 router.get('/books', UserController.getBooks);
 router.post('/borrow', UserController.borrowBook);
 router.post('/return', UserController.returnBook);
+router.get('/borrow-logs', UserController.getBorrowLogs);
 
 module.exports = router; 
