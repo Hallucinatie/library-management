@@ -29,15 +29,15 @@ class Book {
         if (bookData.updatedAt) converted.updated_at = bookData.updatedAt;
 
         // 保持原样的字段
-        if (bookData.title) converted.title = bookData.title;
-        if (bookData.author) converted.author = bookData.author;
-        if (bookData.isbn) converted.isbn = bookData.isbn;
-        if (bookData.quantity) converted.quantity = bookData.quantity;
-        if (bookData.loans) converted.loans = bookData.loans;
-        if (bookData.loansCount) converted.loans_count = bookData.loansCount;
-        if (bookData.description) converted.description = bookData.description;
-        if (bookData.category) converted.category = bookData.category;
-        if (bookData.publisher) converted.publisher = bookData.publisher;
+        if ('title' in bookData) converted.title = bookData.title;
+        if ('author' in bookData) converted.author = bookData.author;
+        if ('isbn' in bookData) converted.isbn = bookData.isbn;
+        if ('quantity' in bookData) converted.quantity = bookData.quantity;
+        if ('loans' in bookData) converted.loans = bookData.loans;
+        if ('loansCount' in bookData) converted.loans_count = bookData.loansCount;
+        if ('description' in bookData) converted.description = bookData.description;
+        if ('category' in bookData) converted.category = bookData.category;
+        if ('publisher' in bookData) converted.publisher = bookData.publisher;
 
         return converted;
     }
