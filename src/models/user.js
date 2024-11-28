@@ -154,29 +154,25 @@ class User {
             paramCount++;
         }
 
-        if (queryParams.username) {
-            query += ` AND username ILIKE $${paramCount}`;
-            values.push(`%${queryParams.username}%`);
-            paramCount++;
-        }
-
-        if (queryParams.email) {
-            query += ` AND email ILIKE $${paramCount}`;
-            values.push(`%${queryParams.email}%`);
-            paramCount++;
-        }
-
-        if (queryParams.role) {
-            query += ` AND role ILIKE $${paramCount}`;
-            values.push(`%${queryParams.role}%`);
-            paramCount++;
-        }
-
         if (queryParams.status) {
-            query += ` AND status ILIKE $${paramCount}`;
-            values.push(`%${queryParams.status}%`);
+            query += ` AND status = $${paramCount}`;
+            values.push(queryParams.status);
             paramCount++;
         }
+
+        const likeFields = {
+            username: 'username',
+            email: 'email',
+            role: 'role',
+        };
+
+        Object.entries(likeFields).forEach(([param, field]) => {
+            if (queryParams[param]) {
+                query += ` AND ${field} ILIKE $${paramCount}`;
+                values.push(`%${queryParams[param]}%`);
+                paramCount++;
+            }
+        });
 
         query += ' ORDER BY created_at ASC';
 

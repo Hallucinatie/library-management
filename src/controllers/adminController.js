@@ -86,69 +86,17 @@ class AdminController {
   static async getBooks(req, res, next) {
     try {
       const { id, title, author, isbn, category } = req.query;
-
-      if (id) {
-        const book = await Book.findById(id);
-        if (!book) {
-          return res.status(404).json({
-            code: 404,
-            msg: "未找到指定ID的书籍",
-            data: null,
-          });
-        }
-
-        // 模糊匹配
-        if (title && !book.title.toLowerCase().includes(title.toLowerCase())) {
-          return res.status(404).json({
-            code: 404,
-            msg: "未找到符合所有条件的书籍",
-            data: null,
-          });
-        }
-        if (
-          author &&
-          !book.author.toLowerCase().includes(author.toLowerCase())
-        ) {
-          return res.status(404).json({
-            code: 404,
-            msg: "未找到符合所有条件的书籍",
-            data: null,
-          });
-        }
-        if (isbn && !book.isbn.toLowerCase().includes(isbn.toLowerCase())) {
-          return res.status(404).json({
-            code: 404,
-            msg: "未找到符合所有条件的书籍",
-            data: null,
-          });
-        }
-        if (
-          category &&
-          !book.category.toLowerCase().includes(category.toLowerCase())
-        ) {
-          return res.status(404).json({
-            code: 404,
-            msg: "未找到符合所有条件的书籍",
-            data: null,
-          });
-        }
-
-        return res.json({
-          code: 200,
-          msg: "查询成功",
-          data: [book],
-          total: 1,
-        });
-      }
-
-      // 如果没有指定 ID，则按其他条件查询
-      const queryParams = {};
-      if (title) queryParams.title = title;
-      if (author) queryParams.author = author;
-      if (isbn) queryParams.isbn = isbn;
-      if (category) queryParams.category = category;
+      const queryParams = { id, title, author, isbn, category };
 
       const books = await Book.findByQuery(queryParams);
+
+      if (books.length === 0) {
+        return res.status(404).json({
+          code: 404,
+          msg: "未找到符合条件的书籍",
+          data: null,
+        });
+      }
 
       res.json({
         code: 200,
@@ -195,16 +143,6 @@ class AdminController {
         });
       }
 
-      // 检查是否有权限修改（只能修改自己创建的论文）
-      // PostgreSQL 返回的列名是小写的
-      if (existingPaper.userId !== req.user.id) {
-        return res.status(403).json({
-          code: 403,
-          msg: "没有权限修改此论文",
-          data: null,
-        });
-      }
-
       const paper = await Paper.update(req.params.id, req.body);
 
       logger.info(`论文已更新: ${paper.title}`);
@@ -237,15 +175,6 @@ class AdminController {
         return res.status(404).json({
           code: 404,
           msg: "未找到该论文",
-          data: null,
-        });
-      }
-
-      // 检查是否有权限删除（只能删除自己创建的论文）
-      if (existingPaper.userId !== req.user.id) {
-        return res.status(403).json({
-          code: 403,
-          msg: "没有权限删除此论文",
           data: null,
         });
       }
@@ -302,7 +231,6 @@ class AdminController {
   static async addUser(req, res, next) {
     try {
       const { username, password, email } = req.body;
-
 
       // 检查用户名是否已存在
       const existingUser = await User.findByUsername(username);
@@ -464,68 +392,7 @@ class AdminController {
   static async getUsers(req, res, next) {
     try {
       const { id, username, email, role, status } = req.query;
-
-      if (id) {
-        const user = await User.findById(id);
-        if (!user) {
-          return res.status(404).json({
-            code: 404,
-            msg: "未找到指定ID的用户",
-            data: null,
-          });
-        }
-
-        // 如果同时指定了其他条件，验证是否匹配
-        if (
-          username &&
-          !user.username.toLowerCase().includes(username.toLowerCase())
-        ) {
-          return res.status(404).json({
-            code: 404,
-            msg: "未找到符合所有条件的用户",
-            data: null,
-          });
-        }
-        if (email && !user.email.toLowerCase().includes(email.toLowerCase())) {
-          return res.status(404).json({
-            code: 404,
-            msg: "未找到符合所有条件的用户",
-            data: null,
-          });
-        }
-        if (role && !user.role.toLowerCase().includes(role.toLowerCase())) {
-          return res.status(404).json({
-            code: 404,
-            msg: "未找到符合所有条件的用户",
-            data: null,
-          });
-        }
-        if (
-          status &&
-          !user.status.toLowerCase().includes(status.toLowerCase())
-        ) {
-          return res.status(404).json({
-            code: 404,
-            msg: "未找到符合所有条件的用户",
-            data: null,
-          });
-        }
-
-        return res.json({
-          code: 200,
-          msg: "查询成功",
-          data: [user],
-          total: 1,
-        });
-      }
-
-      const queryParams = {};
-      if (id) queryParams.id = id;
-      if (username) queryParams.username = username;
-      if (email) queryParams.email = email;
-      if (role) queryParams.role = role;
-      if (status) queryParams.status = status;
-
+      const queryParams = { id, username, email, role, status };
       const users = await User.findByQuery(queryParams);
 
       if (users.length == 0) {
@@ -548,109 +415,109 @@ class AdminController {
     }
   }
 
-    // 借阅管理
-    static async deleteBorrowLog(req, res, next) {
-        try {
-            const borrowLogId = req.params.id;
-            console.log(borrowLogId);
-            const borrowLog = await BorrowLog.delete(borrowLogId);
-            if (!borrowLog) {
-                return res.status(404).json({code: 404, message: "未找到该借阅记录"});
-            }
-            logger.info(`借阅记录已删除: ID ${borrowLog.id}`);
-            res.status(200).json({
-                code: 200,
-                msg: "借阅记录删除成功" ,
-                data: borrowLog
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    static async getBorrowLogs(req, res, next) {
-        try {
-            const { id, userId, bookId, borrowDate, dueDate, returnDate, status } = req.query;
-
-            if (status.toLowerCase() !== "borrowed" && status.toLowerCase() !== "returned" && status) {
-                return res.status(400).json({
-                    code: 400,
-                    messsage: `status关键字必须为 borrowed 或 returned, 传入 ${status}.`,
-                });
-            }
-
-            const queryParams = { id, userId, bookId, borrowDate, dueDate, returnDate, status };
-            const findBorrowLogs = await BorrowLog.findByQuery(queryParams);
-
-            if (findBorrowLogs.length === 0) {
-                return res.status(404).json({
-                    code: 404,
-                    messsage: "未找到符合条件的借阅记录",
-                });
-            }
-    
-            res.json({
-                code: 200,
-                msg: "查询成功",
-                data: findBorrowLogs,
-                total: findBorrowLogs.length,
-            });
-        } catch (error) {
-            logger.error(`查询借阅记录失败: ${error.message}`);
-            next(error);
-        }
-    }
-
-    // 下载管理
-    static async deleteDownloadLog(req, res, next) {
-        try {
-            const downloadLogId = req.params.id;
-            console.log(downloadLogId);
-            const downloadLog = await DownloadLog.delete(downloadLogId);
-            if (!downloadLog) {
-                return res.status(404).json({code: 404, message: "未找到该下载记录"});
-            }
-            logger.info(`下载记录已删除: ID ${downloadLog.id}`);
-            res.status(200).json({
-                code: 200,
-                msg: "下载记录删除成功" ,
-                data: downloadLog
-            });
-        } catch (error) {
-            next(error);
-        }
-    }
-
-    static async getDownloadLogs(req, res, next) {
-        try {
-            const { id, userId, paperId, downloadDate } = req.query;
-
-            const queryParams = { id, userId, paperId, downloadDate };
-            const findDownloadLogs = await DownloadLog.findByQuery(queryParams);
-
-            if (findDownloadLogs.length === 0) {
-                return res.status(404).json({
-                    code: 404,
-                    messsage: "未找到符合条件的下载记录",
-                });
-            }
-    
-            res.json({
-                code: 200,
-                msg: "查询成功",
-                data: findDownloadLogs,
-                total: findDownloadLogs.length,
-            });
-        } catch (error) {
-            logger.error(`查询下载记录失败: ${error.message}`);
-            next(error);
-        }
+  // 借阅管理
+  static async deleteBorrowLog(req, res, next) {
+    try {
+      const borrowLogId = req.params.id;
+      console.log(borrowLogId);
+      const borrowLog = await BorrowLog.delete(borrowLogId);
+      if (!borrowLog) {
+        return res.status(404).json({ code: 404, message: "未找到该借阅记录" });
       }
+      logger.info(`借阅记录已删除: ID ${borrowLog.id}`);
+      res.status(200).json({
+        code: 200,
+        msg: "借阅记录删除成功",
+        data: borrowLog
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getBorrowLogs(req, res, next) {
+    try {
+      const { id, userId, bookId, borrowDate, dueDate, returnDate, status } = req.query;
+
+      if (status.toLowerCase() !== "borrowed" && status.toLowerCase() !== "returned" && status) {
+        return res.status(400).json({
+          code: 400,
+          messsage: `status关键字必须为 borrowed 或 returned, 传入 ${status}.`,
+        });
+      }
+
+      const queryParams = { id, userId, bookId, borrowDate, dueDate, returnDate, status };
+      const findBorrowLogs = await BorrowLog.findByQuery(queryParams);
+
+      if (findBorrowLogs.length === 0) {
+        return res.status(404).json({
+          code: 404,
+          messsage: "未找到符合条件的借阅记录",
+        });
+      }
+
+      res.json({
+        code: 200,
+        msg: "查询成功",
+        data: findBorrowLogs,
+        total: findBorrowLogs.length,
+      });
+    } catch (error) {
+      logger.error(`查询借阅记录失败: ${error.message}`);
+      next(error);
+    }
+  }
+
+  // 下载管理
+  static async deleteDownloadLog(req, res, next) {
+    try {
+      const downloadLogId = req.params.id;
+      console.log(downloadLogId);
+      const downloadLog = await DownloadLog.delete(downloadLogId);
+      if (!downloadLog) {
+        return res.status(404).json({ code: 404, message: "未找到该下载记录" });
+      }
+      logger.info(`下载记录已删除: ID ${downloadLog.id}`);
+      res.status(200).json({
+        code: 200,
+        msg: "下载记录删除成功",
+        data: downloadLog
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getDownloadLogs(req, res, next) {
+    try {
+      const { id, userId, paperId, downloadDate } = req.query;
+
+      const queryParams = { id, userId, paperId, downloadDate };
+      const findDownloadLogs = await DownloadLog.findByQuery(queryParams);
+
+      if (findDownloadLogs.length === 0) {
+        return res.status(404).json({
+          code: 404,
+          messsage: "未找到符合条件的下载记录",
+        });
+      }
+
+      res.json({
+        code: 200,
+        msg: "查询成功",
+        data: findDownloadLogs,
+        total: findDownloadLogs.length,
+      });
+    } catch (error) {
+      logger.error(`查询下载记录失败: ${error.message}`);
+      next(error);
+    }
+  }
 
   // 统计信息
   static async getStatistics(req, res, next) {
     try {
-        // So I guess it's the begining of the end, or the end of the begining?
+      // So I guess it's the begining of the end, or the end of the begining?
       // 获取借阅统计
       const borrowStats = await pool.query(`
                 SELECT 

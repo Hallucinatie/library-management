@@ -99,7 +99,8 @@ class Paper {
 
     const query = `
         UPDATE papers 
-            SET ${updateFields.join(", ")}
+            SET ${updateFields.join(", ")},
+                updated_at = CURRENT_TIMESTAMP
             WHERE id = $1
             RETURNING *
     `;
@@ -187,12 +188,12 @@ class Paper {
     });
 
     if (queryParams.userId) {
-        query += ` AND (user_id = $${paramCount} OR is_public = true)`;
-        values.push(queryParams.userId);
-        paramCount++;
+      query += ` AND (user_id = $${paramCount} OR is_public = true)`;
+      values.push(queryParams.userId);
+      paramCount++;
     }
 
-    query += " ORDER BY created_at DESC";
+    query += " ORDER BY created_at ASC";
 
     const { rows } = await pool.query(query, values);
     return rows.map((row) => this._convertToCamelCase(row));

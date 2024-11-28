@@ -45,7 +45,7 @@ class Book {
     // 修改现有方法以使用转换函数
     static async create(bookData) {
         const snakeCaseData = this._convertToSnakeCase(bookData);
-        
+
         const query = `
             INSERT INTO books (title, author, isbn, quantity, loans, loans_count, description, 
                              category, publisher, publish_date)
@@ -64,11 +64,12 @@ class Book {
             bookData.publisher,
             snakeCaseData.publish_date
         ];
-        
+
         try {
             const { rows } = await pool.query(query, values);
             return this._convertToCamelCase(rows[0]);
         } catch (error) {
+            // TODO: 给图书添加一致性检查
             if (error.code === '23505') {
                 throw new Error('图书已存在');
             }
@@ -94,16 +95,17 @@ class Book {
 
         const query = `
             UPDATE books 
-            SET ${updateFields.join(', ')}
+            SET ${updateFields.join(', ')},
+                updated_at = CURRENT_TIMESTAMP
             WHERE id = $1
             RETURNING *
         `;
 
-        try{
+        try {
             const { rows } = await pool.query(query, values);
             return this._convertToCamelCase(rows[0]);
-        }catch(error){
-            if(error.code=='23505'){
+        } catch (error) {
+            if (error.code == '23505') {
                 throw new Error('图书文件已存在');
             }
             throw error;
@@ -134,23 +136,20 @@ class Book {
             paramCount++;
         }
 
-        if (queryParams.title) {
-            query += ` AND title ILIKE $${paramCount}`;
-            values.push(`%${queryParams.title}%`);
-            paramCount++;
-        }
+        const likeFields = {
+            title: 'title',
+            author: 'author',
+            category: 'category',
+            isbn: 'isbn',
+        };
 
-        if (queryParams.author) {
-            query += ` AND author ILIKE $${paramCount}`;
-            values.push(`%${queryParams.author}%`);
-            paramCount++;
-        }
-
-        if (queryParams.category) {
-            query += ` AND category ILIKE $${paramCount}`;
-            values.push(`%${queryParams.category}%`);
-            paramCount++;
-        }
+        Object.entries(likeFields).forEach(([param, field]) => {
+            if (queryParams[param]) {
+                query += ` AND ${field} ILIKE $${paramCount}`;
+                values.push(`%${queryParams[param]}%`);
+                paramCount++;
+            }
+        });
 
         query += ' ORDER BY created_at ASC';
 
@@ -166,10 +165,10 @@ class Book {
             RETURNING *
             `;
 
-        try{
+        try {
             const { rows } = await pool.query(query, [id]);
             return this._convertToCamelCase(rows[0]);
-        }catch(error){
+        } catch (error) {
             throw error;
         }
     }

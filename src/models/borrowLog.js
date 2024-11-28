@@ -94,7 +94,7 @@ class BorrowLog {
         let query = "SELECT * FROM borrow_logs WHERE 1=1";
         const values = [];
         let paramCount = 1;
-    
+
         // borrowDate, dueDate, returnDate, status
         // 精确匹配字段
         const equalFields = {
@@ -110,7 +110,7 @@ class BorrowLog {
                 paramCount++;
             }
         });
-    
+
         // 模糊匹配其他字段
         const likeFields = {
             borrowDate: "borrow_date",
@@ -118,7 +118,7 @@ class BorrowLog {
             returnDate: "return_date",
             status: "status"
         };
-    
+
         Object.entries(likeFields).forEach(([param, field]) => {
             if (queryParams[param]) {
                 query += ` AND ${field} ILIKE $${paramCount}`;
@@ -126,13 +126,13 @@ class BorrowLog {
                 paramCount++;
             }
         });
-    
-        query += " ORDER BY created_at DESC";
-    
+
+        query += " ORDER BY created_at ASC";
+
         const { rows } = await pool.query(query, values);
         return rows.map((row) => this._convertToCamelCase(row));
     }
-    
+
 }
 
 module.exports = BorrowLog; 

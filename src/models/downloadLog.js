@@ -83,7 +83,7 @@ class DownloadLog {
             }
         });
     
-        query += " ORDER BY created_at DESC";
+        query += " ORDER BY created_at ASC";
     
         const { rows } = await pool.query(query, values);
         return rows.map((row) => this._convertToCamelCase(row));
