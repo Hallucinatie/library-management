@@ -1,8 +1,21 @@
 const { pool } = require("../config/database");
 
 const https = require('https');
+const http = require('http');
+const url = require('url');
 const fs = require('fs');
 const path = require('path');
+
+const Minio = require('minio');
+
+// 初始化 MinIO 客户端
+const minioClient = new Minio.Client({
+  endPoint: '47.96.95.171', // MinIO 服务器的 IP 地址
+  port: 9000,  // MinIO API 端口，默认 9000
+  useSSL: false,  // 如果 MinIO 使用 HTTPS，设为 true，否则设为 false
+  accessKey: 'shiluohe',  // MinIO 访问密钥
+  secretKey: 'shiluohe123'   // MinIO 秘密密钥
+});
 
 class Paper {
   // 将数据库蛇形命名转换为驼峰命名
@@ -202,29 +215,81 @@ class Paper {
     return rows.map((row) => this._convertToCamelCase(row));
   }
     
-    static async downloadFile(url, downloadDir, callback) {
-        
-        const fileName = path.basename(url);
-        const filePath = path.join(downloadDir, fileName);
-        const file = fs.createWriteStream(filePath);
-    
-        // 发送GET请求下载文件
-        https.get(url, (response) => {
-            response.pipe(file);
-    
-            // 当文件写入完成时，调用回调函数
-            file.on('finish', () => {
-                file.close(() => {
-                    callback(null, filePath);
+    static async uploadFile(bucketName, filePath) {
+        return new Promise((resolve, reject) => {
+            // 确保文件路径存在
+            fs.access(filePath, fs.constants.F_OK, (err) => {
+                if (err) {
+                    return reject('File not found');
+                }
+                
+                const fileName = path.basename(filePath)
+
+                // 上传文件到 MinIO
+                minioClient.fPutObject(bucketName, fileName, filePath, function(err, etag) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve(`File ${fileName} uploaded successfully`);
+                    }
                 });
             });
-        }).on('error', (err) => {
-            // 处理错误
-            fs.unlink(filePath, () => {}); // 删除文件（如果已创建）
-            callback(err.message);
         });
+    }
 
-        return filePath
+    static async downloadFile(bucketName, fileName, downloadPath) {
+        return new Promise((resolve, reject) => {
+            minioClient.fGetObject(bucketName, fileName, downloadPath, function(err) {
+                if (err) {
+                    if (err.code === 'NoSuchKey') {
+                        resolve(null);
+                    } else {
+                        reject(err);
+                    }
+                } else {
+                    resolve(`File ${fileName} downloaded to ${downloadPath}`);
+                }
+            });
+        });
+    }
+
+    static async downloadFileExternal(urlStr, destPath) {
+        return new Promise((resolve, reject) => {
+            const mod = https;
+          
+            // 创建可写流，指定保存文件的路径
+            const file = fs.createWriteStream(destPath);
+          
+            // 发起 HTTP 请求
+            const request = mod.get(urlStr, (response) => {
+                // 如果响应的状态码不是 200，表示文件下载失败
+                if (response.statusCode !== 200) {
+                    reject(new Error(`Failed to download file. Status code: ${response.statusCode}`));
+                    return;
+                }
+          
+                // 将响应流写入到文件
+                response.pipe(file);
+          
+                // 下载完成后，关闭文件流并 resolve
+                file.on('finish', () => {
+                    file.close();
+                    resolve(`File downloaded successfully to ${destPath}`);
+                });
+            });
+          
+            // 监听请求错误
+            request.on('error', (err) => {
+                fs.unlink(destPath, () => {}); // 如果下载失败，删除部分下载的文件
+                reject(new Error(`Failed to download file: ${err.message}`));
+            });
+          
+              // 处理下载中断的情况
+            request.on('abort', () => {
+                fs.unlink(destPath, () => {});
+                reject(new Error('Download aborted.'));
+            });
+        });
     }
 
     static async clearDirectory(dirPath) {

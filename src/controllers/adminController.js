@@ -608,7 +608,13 @@ class AdminController {
     static async clearLocalPaperCache(req, res, next) {
         try {
 
-            const cleanedFiles = await Paper.clearDirectory('localPapers/');
+            const cleanedFiles1 = await Paper.clearDirectory('localPapers/downloaded');
+            const cleanedFiles2 = await Paper.clearDirectory('localPapers/toBeUploaded');
+
+            const cleanedFiles = {
+                cleanedFiles: cleanedFiles1.cleanedFiles.concat(cleanedFiles2.cleanedFiles),
+                totalSize: cleanedFiles1.totalSize + cleanedFiles2.totalSize
+            };
 
             res.json({
                 code: 200,

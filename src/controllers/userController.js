@@ -3,24 +3,40 @@ const Paper = require('../models/paper');
 const BorrowLog = require('../models/borrowLog');
 const DownloadLog = require('../models/downloadLog');
 const logger = require('../config/logger');
+const { request } = require('express');
+const path = require('path');
+const { url } = require('inspector');
 
 class UserController {
     // 论文操作
     static async uploadPaper(req, res, next) {
         try {
-            const paperData = {
+            let paperData = {
                 ...req.body,
                 userId: req.user.id,
                 fileUrl: req.body.fileUrl
             };
+
+            if (req.body.localFilePath) {
+                const filePath = req.body.localFilePath
+                const fileName = path.basename(filePath)
+                await Paper.uploadFile('library-management-papers', filePath)
+                paperData.fileUrl = `internalFileServer/${fileName}`;
+            }
+
             const paper = await Paper.create(paperData);
             logger.info(`用户 ${req.user.username} 上传了新论文: ${paper.title}`);
+
             res.status(200).json({
                 code: 200,
                 msg: '论文上传成功',
                 data: paper
             });
         } catch (error) {
+            res.status(400).json({
+                code: 404,
+                message: '论文上传失败, 可能是指定了本地文件但是文件不存在'
+            })
             logger.error(`添加论文失败: ${error.message}`);
             next(error);
         }
@@ -48,42 +64,47 @@ class UserController {
             });
 
             logger.info(`用户 ${req.user.username} 下载了论文: ${existingPaper.title}`);
-
-            let paperDownloaded = true;
-            let paperDownloadErrorInfo = null;
-            let paperLocalPath = null
-            try {
-                paperLocalPath = await Paper.downloadFile(
-                    existingPaper.fileUrl,
-                    'localPapers',
-                    (err, filePath) => {
-                        if (err) {
-                            paperDownloaded = false;
-                            paperDownloadErrorInfo = err;
-                        } else {
-                            logger.log('File downloaded to:', filePath);
-                        }
-                    }
-                );
-            } catch (error) { }
-
-            if (paperDownloaded) {
-                res.status(200).json({
+            
+            if (req.query.noDownload == 'true') {
+                return res.status(200).json({
                     code: 200,
                     msg: '论文下载成功',
                     data: existingPaper,
-                    fileUrl: existingPaper.fileUrl,
-                    filePath: paperLocalPath
-                });
-            } else {
-                res.status(200).json({
-                    code: 200,
-                    msg: '论文查询成功，但未能下载',
-                    data: existingPaper,
-                    fileUrl: existingPaper.fileUrl,
-                    downloadError: paperDownloadErrorInfo
-                });
+                    fileUrl: existingPaper.fileUrl
+                });    
             }
+
+            const urlRoot  = existingPaper.fileUrl.split("/")[0];
+            const fileName = path.basename(existingPaper.fileUrl);
+            if (urlRoot === 'internalFileServer') {
+                await Paper.downloadFile(
+                    'library-management-papers', 
+                    fileName, 
+                    'localPapers/downloaded/' + fileName
+                );
+            } else {
+                try {
+                    await Paper.downloadFileExternal(
+                        existingPaper.fileUrl,
+                        'localPapers/downloaded/' + fileName
+                    );
+                } catch (error) {
+                    return res.status(201).json({
+                        code: 201,
+                        msg: '论文查询成功但无法下载',
+                        data: existingPaper,
+                        fileUrl: existingPaper.fileUrl
+                    }); 
+                }
+            }
+
+            res.status(200).json({
+                code: 200,
+                msg: '论文下载成功',
+                data: existingPaper,
+                fileUrl: existingPaper.fileUrl,
+                filePath: 'localPapers/downloaded/' + fileName
+            });
 
         } catch (error) {
             logger.error(`论文下载失败: ${error.message}`);
