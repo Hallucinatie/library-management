@@ -89,7 +89,9 @@ class AuthController {
             }
 
             const url = new URL(baseUrl).origin;
-            // console.log(new URL(baseUrl));
+            if (url.endsWith('/')) {
+                url = url.slice(0, -1);
+            }
 
 
             const verificationCode = jwt.sign(
