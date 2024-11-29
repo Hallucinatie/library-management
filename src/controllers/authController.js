@@ -92,6 +92,7 @@ class AuthController {
             if (url.endsWith('/')) {
                 url = url.slice(0, -1);
             }
+            // console.log(url.slice(0,-1));
 
 
             const verificationCode = jwt.sign(
@@ -114,7 +115,7 @@ class AuthController {
                 }
             });
 
-            const verificationUrl = `${url}?verificationCode=${verificationCode}resetPassword&userId=${user.id}&username=${user.username}`;
+            const verificationUrl = `${url}/resetpassword?verificationCode=${verificationCode}resetPassword&userId=${user.id}&username=${user.username}`;
 
             let mailOptions = {
                 from: `1691506185@qq.com`, // 发件人
