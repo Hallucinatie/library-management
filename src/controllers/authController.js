@@ -74,11 +74,11 @@ class AuthController {
         }
     }
 
-    
+
     //发送验证码
-    static async sendCode(req,res,next) {
-        try{
-            const {email, baseUrl} =req.body;
+    static async sendCode(req, res, next) {
+        try {
+            const { email, baseUrl } = req.body;
             const user = await User.findByEmail(email);
             if (!user) {
                 return res.status(401).json({
@@ -104,35 +104,35 @@ class AuthController {
             );
 
             let transporter = nodemailer.createTransport({
-                host: 'smtp.qq.com',
-                secureConnection: true, // use SSL
-                port: 465,
-                secure: true, // secure:true for port 465, secure:false for port 587
+                host: process.env.EMAIL_HOST,
+                secureConnection: true,
+                port: process.env.EMAIL_PORT,
+                secure: true,
                 auth: {
-                    user: '1691506185@qq.com',
-                    pass: 'gzsxbqbzqckwcjgc' // QQ邮箱需要使用授权码
+                    user: process.env.EMAIL_USER,
+                    pass: process.env.EMAIL_PASS
                 }
             });
 
             const verificationUrl = `${url}/resetpassword?verificationCode=${verificationCode}&userId=${user.id}&username=${user.username}`;
 
             let mailOptions = {
-                from: `1691506185@qq.com`, // 发件人
+                from: process.env.EMAIL_USER, // 发件人
                 to: email, // 收件人
                 subject: `图书馆管理系统密码找回`, // 主题
                 text: `verificationCode`, // plain text body
                 html: `<b>请点击以下链接重置您的密码:<br><br><a href="${verificationUrl}">${verificationUrl}</a><br><br>您可以凭此验证码找回个人密码，请勿泄露给任何人，如果您并没有选择重置密码，请忽略本条邮件。</b>`,
-                };
+            };
 
             const sendMailPromise = util.promisify(transporter.sendMail.bind(transporter));
-            await sendMailPromise(mailOptions); 
+            await sendMailPromise(mailOptions);
 
             res.json({
                 code: 200,
                 msg: '验证码已发送，请检查邮箱',
                 data: null
             });
-        }catch (error) {
+        } catch (error) {
             next(error);
         }
     }
@@ -150,7 +150,7 @@ class AuthController {
                     data: null
                 });
             }
-            
+
             const decoded = jwt.verify(code, JWT_SECRET);
             if (decoded.usage !== 'email_verification') {
                 return res.status(401).json({
@@ -274,7 +274,7 @@ class AuthController {
                     data: null
                 });
             }
-            
+
             const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
             const user = await User.findById(id);

@@ -2,5 +2,6 @@ node_modules
 logs
 test.js
 .vscode
-*.xml
 .idea
+.env
+localPapers
