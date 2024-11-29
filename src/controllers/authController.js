@@ -115,7 +115,7 @@ class AuthController {
                 }
             });
 
-            const verificationUrl = `${url}/resetpassword?verificationCode=${verificationCode}resetPassword&userId=${user.id}&username=${user.username}`;
+            const verificationUrl = `${url}/resetpassword?verificationCode=${verificationCode}&userId=${user.id}&username=${user.username}`;
 
             let mailOptions = {
                 from: `1691506185@qq.com`, // 发件人
