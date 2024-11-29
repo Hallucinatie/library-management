@@ -79,8 +79,7 @@ class User {
 
         const query = `
             UPDATE users 
-            SET ${updateFields.join(', ')},  
-                updated_at = CURRENT_TIMESTAMP    -- 添加了逗号
+            SET ${updateFields.join(', ')}
             WHERE id = $1
             RETURNING *
         `;

@@ -44,12 +44,12 @@ class UserController {
 
     static async downloadPaper(req, res, next) {
         try {
-            
+
             const existingPaper = await Paper.findById(req.params.id);
             if (!existingPaper) {
-                return res.status(404).json({ 
+                return res.status(404).json({
                     code: 404,
-                    message: '论文不存在' 
+                    message: '论文不存在'
                 });
             }
 
@@ -117,16 +117,9 @@ class UserController {
             const { paperId, paperTitle, paperAuthor, downloadDate } = req.query;
             const id = null;
             const userId = req.user.id;
-            
+
             const queryParams = { id, userId, paperId, paperTitle, paperAuthor, downloadDate };
             const findDownloadLogs = await DownloadLog.findByQuery(queryParams);
-
-            if (findDownloadLogs.length === 0) {
-                return res.status(404).json({
-                code: 404,
-                messsage: "未找到符合条件的下载记录",
-                });
-            }
 
             res.json({
                 code: 200,
@@ -143,14 +136,14 @@ class UserController {
     // 查询操作
     static async getBooks(req, res, next) {
         try {
-            const {id, title, author, isbn, category} = req.query;
-            
-            if(id) {
+            const { id, title, author, isbn, category } = req.query;
+
+            if (id) {
                 const book = await Book.findById(id);
-                if(!book){
+                if (!book) {
                     return res.status(404).json({
                         code: 404,
-                        msg:'未找到指定ID的书籍',
+                        msg: '未找到指定ID的书籍',
                         data: null
                     });
                 }
@@ -216,7 +209,7 @@ class UserController {
 
     static async getPapers(req, res, next) {
         try {
-            const {id, title, author, category} = req.query;
+            const { id, title, author, category } = req.query;
 
             // 如果指定了 ID，优先按 ID 查询
             if (id) {
@@ -284,22 +277,22 @@ class UserController {
     // 借阅操作
     static async borrowBook(req, res, next) {
         try {
-            const {id} = req.query;
+            const { id } = req.query;
             const existingBookbook = await Book.findById(id);
-            
+
             if (!existingBookbook) {
-                return res.status(404).json({code: 404, message: '图书不存在'});
+                return res.status(404).json({ code: 404, message: '图书不存在' });
             }
-            
+
             const availableQuantity = await Book.getAvailableQuantity(id);
             if (availableQuantity <= 0) {
-                return res.status(400).json({code: 400, message: '图书已全部借出'});
+                return res.status(400).json({ code: 400, message: '图书已全部借出' });
             }
 
             // 更新借出数量
             const updatedBook = await Book.updateLoans(id, true);
             if (!updatedBook) {
-                return res.status(400).json({code: 400, message: '借阅失败，图书可能已被借出'});
+                return res.status(400).json({ code: 400, message: '借阅失败，图书可能已被借出' });
             }
 
             // 创建借阅记录
@@ -308,7 +301,7 @@ class UserController {
                 bookId: id,
                 bookTitle: updatedBook.title,
                 bookAuthor: updatedBook.author,
-                bookIsbn:  updatedBook.isbn,
+                bookIsbn: updatedBook.isbn,
                 dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30天后
             });
 
@@ -328,15 +321,15 @@ class UserController {
         try {
             const borrowId = req.query.borrowId;
             const borrowLog = await BorrowLog.return(borrowId);
-            
+
             if (!borrowLog) {
-                return res.status(404).json({code: 404, message: '借阅记录不存在'});
+                return res.status(404).json({ code: 404, message: '借阅记录不存在' });
             }
 
             // 更新借出数量
             const updatedBook = await Book.updateLoans(borrowLog.bookId, false);
             if (!updatedBook) {
-                return res.status(400).json({code: 400, message: '归还失败，请联系管理员'});
+                return res.status(400).json({ code: 400, message: '归还失败，请联系管理员' });
             }
 
             logger.info(`用户 ${req.user.username} 归还了图书: ${updatedBook.title}`);
@@ -353,25 +346,20 @@ class UserController {
     static async getBorrowLogs(req, res, next) {
         try {
             const {
-                bookId, bookTitle, bookAuthor, bookIsbn, 
-                borrowDate, dueDate, returnDate, 
-                status 
+                bookId, bookTitle, bookAuthor, bookIsbn,
+                borrowDate, dueDate, returnDate,
+                status
             } = req.query;
             const id = null;
             const userId = req.user.id;
-            
-            const queryParams = { id, userId, 
-                bookId, bookTitle, bookAuthor, bookIsbn, 
-                borrowDate, dueDate, returnDate, 
-                status };
+
+            const queryParams = {
+                id, userId,
+                bookId, bookTitle, bookAuthor, bookIsbn,
+                borrowDate, dueDate, returnDate,
+                status
+            };
             const findBorrowLogs = await BorrowLog.findByQuery(queryParams);
-                
-            if (findBorrowLogs.length === 0) {
-                return res.status(404).json({
-                code: 404,
-                messsage: "未找到符合条件的借阅记录",
-                });
-            }
 
             res.json({
                 code: 200,
