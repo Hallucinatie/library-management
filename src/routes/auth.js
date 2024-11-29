@@ -15,6 +15,7 @@ router.post('/login', loginValidation, validate, AuthController.login);
 
 router.post('/getcode',AuthController.sendCode);
 router.post('/loginbyemail',AuthController.loginbyemail);
+router.post('/resetpassword',AuthController.resetpassword);
 // 用户注册路由
 router.post('/register', userValidationRules(), validate, AuthController.register);
 
