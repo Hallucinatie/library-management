@@ -94,14 +94,13 @@ class AuthController {
             }
             // console.log(url.slice(0,-1));
 
-
             const verificationCode = jwt.sign(
                 {
                     id: user.id,
                     usage: 'email_verification',
                 },
                 JWT_SECRET,
-                { expiresIn: '1h' }
+                { expiresIn: '5m' }
             );
 
             let transporter = nodemailer.createTransport({
