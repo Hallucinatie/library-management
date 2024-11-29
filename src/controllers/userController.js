@@ -100,13 +100,6 @@ class UserController {
             const queryParams = { id, userId, paperId, paperTitle, paperAuthor, downloadDate };
             const findDownloadLogs = await DownloadLog.findByQuery(queryParams);
 
-            if (findDownloadLogs.length === 0) {
-                return res.status(404).json({
-                    code: 404,
-                    messsage: "未找到符合条件的下载记录",
-                });
-            }
-
             res.json({
                 code: 200,
                 msg: "查询成功",
